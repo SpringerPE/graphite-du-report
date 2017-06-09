@@ -4,6 +4,8 @@ import (
 	"log"
 	"fmt"
 	"time"
+	"strings"
+	"sync"
 
 	"io/ioutil"
 	"net/http"
@@ -12,7 +14,51 @@ import (
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
+type limiter chan struct{}
+
+func (l limiter) enter() { l <- struct{}{} }
+func (l limiter) leave() { <-l }
+
+func newLimiter(l int) limiter {
+	return make(chan struct{}, l)
+}
+
 var errTimeout = fmt.Errorf("Max tries exceeded")
+
+type Node struct {
+    Name    string
+    Leaf bool
+    Size   int64
+    Children map[string]*Node
+}
+
+func constructTree(root *Node, details *pb.MetricDetailsResponse) {
+	for metric, data := range details.Metrics {
+		currentNode := root
+		parts := strings.Split(metric, ".")
+		leafIndex := len(parts) - 1
+		for index, part := range(parts) {
+			if val, ok := currentNode.Children[part]; ok {
+				currentNode = val
+				continue
+			}
+			isLeaf := false
+			size := int64(0)
+			if index == leafIndex {
+				isLeaf = true
+				size = data.Size_
+			}
+			currentNode.Children[part] = &Node{
+				Name: part, 
+				Children: map[string]*Node{},
+				Leaf: isLeaf,
+				Size: size,
+			}
+		}
+	}
+
+
+}
 
 func fetchData(httpClient *http.Client, url string) (*pb.MetricDetailsResponse, error) {
 	var metricsResponse pb.MetricDetailsResponse
@@ -53,15 +99,41 @@ retry:
 	return &metricsResponse, nil
 }
 
+//Calculates the disk usage in terms of number of files contained
+func count(root *Node) (size int64) {
+    size = 0
+    //if it is a file its size is 1
+    if root.Leaf {
+        return root.Size
+    }
+
+    for _, child := range root.Children {
+        size +=  count(child)
+    }
+
+    root.Size = size
+    return size
+}
+
+func visit(name string, root *Node) {
+    name += "." + root.Name
+  //  if !root.Leaf {
+  //  }
+    for _, child := range root.Children {
+        visit(name, child)
+    }
+    fmt.Printf("Folder: %s Size: %d\n", name, root.Size)
+
+}
 
 
 func getDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
-	_ = &http.Client{Timeout: 120 * time.Second}
+	httpClient := &http.Client{Timeout: 120 * time.Second}
 	response := &pb.MetricDetailsResponse{
 		Metrics: make(map[string]*pb.MetricDetails),
 	}
-/*	responses := make([]*pb.MetricDetailsResponse, len(ips))
-	fetchingLimiter := newLimiter(config.FetchPerCluster)
+	responses := make([]*pb.MetricDetailsResponse, len(ips))
+	fetchingLimiter := newLimiter(1)
 
 	var wg sync.WaitGroup
 	for idx, ip := range ips {
@@ -70,10 +142,10 @@ func getDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
 			fetchingLimiter.enter()
 			defer fetchingLimiter.leave()
 			defer wg.Done()
-			url := "http://127.0.0.1:8080/metrics/details/?format=protobuf"
+			url := "http://"+ip+":8080/metrics/details/?format=protobuf"
 			data, err := fetchData(httpClient, url)
 			if err != nil {
-				logger.Error("timeout during fetching details")
+				log.Println("timeout during fetching details")
 				return
 			}
 			responses[i] = data
@@ -111,10 +183,15 @@ func getDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
 
 	response.FreeSpace /= uint64(maxCount)
 	response.TotalSpace /= uint64(maxCount)
-*/
+
 	return response
 }
 
 func main() {
-	getDetails([]string{}, "")
+	response := getDetails([]string{"127.0.0.1"}, "")
+	root := &Node{Name: "root", Children: map[string]*Node{}}
+	constructTree(root, response)
+	count(root)
+	//fmt.Printf("%v", *root)
+	visit("", root)
 }
