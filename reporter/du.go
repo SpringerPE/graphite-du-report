@@ -54,6 +54,7 @@ func ConstructTree(root *Node, details *pb.MetricDetailsResponse) {
 				Leaf:     isLeaf,
 				Size:     size,
 			}
+			currentNode = currentNode.Children[part]
 		}
 	}
 
@@ -116,13 +117,11 @@ func Count(root *Node) (size int64) {
 
 func Visit(name string, root *Node) {
 	name += "." + root.Name
-	//  if !root.Leaf {
-	//  }
-	if root.Size > 12245760 {
-		for _, child := range root.Children {
-			Visit(name, child)
-		}
+
+	for _, child := range root.Children {
+		Visit(name, child)
 	}
+
 	fmt.Printf("Folder: %s Size: %d\n", name, root.Size)
 
 }
