@@ -113,7 +113,7 @@ retry:
 }
 
 //Calculates the disk usage in terms of number of files contained
-func Count(root *Node) (size int64) {
+func UpdateSize(root *Node) (size int64) {
 	size = 0
 	//if it is a file its size is 1
 	if root.Leaf {
@@ -121,7 +121,7 @@ func Count(root *Node) (size int64) {
 	}
 
 	for _, child := range root.Children {
-		size += Count(child)
+		size += UpdateSize(child)
 	}
 
 	root.Size = size

@@ -11,7 +11,7 @@ func main() {
 	response := reporter.GetDetails([]string{"127.0.0.1"}, "", fetcher)
 	root := &reporter.Node{Name: "root", Children: map[string]*reporter.Node{}}
 	reporter.ConstructTree(root, response)
-	reporter.Count(root)
+	reporter.UpdateSize(root)
 	//fmt.Printf("%v", *root)
 	reporter.Visit("", root)
 }

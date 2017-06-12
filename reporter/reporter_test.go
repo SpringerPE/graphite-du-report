@@ -63,7 +63,7 @@ var _ = Describe("Reporter", func() {
 			It("Can update the metadata", func() {
 				root := &reporter.Node{Name: "root", Children: map[string]*reporter.Node{}}
 				reporter.ConstructTree(root, response)
-				reporter.Count(root)
+				reporter.UpdateSize(root)
 				rootChildren := root.Children
 				Expect(rootChildren["team1"].Size).To(Equal(int64(1560576)))
 				Expect(rootChildren["team2"].Size).To(Equal(int64(2080768)))
