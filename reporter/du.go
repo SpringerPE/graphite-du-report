@@ -60,18 +60,31 @@ func ConstructTree(root *Node, details *pb.MetricDetailsResponse) {
 
 }
 
-func fetchData(httpClient *http.Client, url string) (*pb.MetricDetailsResponse, error) {
+type Fetcher interface {
+	FetchData(url string) (*pb.MetricDetailsResponse, error)
+}
+
+type DataFetcher struct {
+	http.Client
+	Retries int
+}
+
+func NewDataFetcher(timeout time.Duration, retries int) Fetcher {
+	return &DataFetcher{Client: http.Client{Timeout: timeout * time.Second}, Retries: retries}
+}
+
+func (fetcher *DataFetcher) FetchData(url string) (*pb.MetricDetailsResponse, error) {
 	var metricsResponse pb.MetricDetailsResponse
 	var response *http.Response
 	var err error
 	tries := 1
 
 retry:
-	if tries > 3 {
+	if tries > fetcher.Retries {
 		log.Println("Tries exceeded while trying to fetch data")
 		return nil, errTimeout
 	}
-	response, err = httpClient.Get(url)
+	response, err = fetcher.Get(url)
 	if err != nil {
 		log.Println("Error during communication with client")
 		tries++
@@ -126,8 +139,10 @@ func Visit(name string, root *Node) {
 
 }
 
-func GetDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
-	httpClient := &http.Client{Timeout: 120 * time.Second}
+func GetDetails(ips []string,
+	cluster string,
+	fetcher Fetcher) *pb.MetricDetailsResponse {
+
 	response := &pb.MetricDetailsResponse{
 		Metrics: make(map[string]*pb.MetricDetails),
 	}
@@ -142,7 +157,7 @@ func GetDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
 			defer fetchingLimiter.leave()
 			defer wg.Done()
 			url := "http://" + ip + ":8080/metrics/details/?format=protobuf"
-			data, err := fetchData(httpClient, url)
+			data, err := fetcher.FetchData(url)
 			if err != nil {
 				log.Println("timeout during fetching details")
 				return
