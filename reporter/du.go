@@ -129,7 +129,10 @@ func UpdateSize(root *Node) (size int64) {
 }
 
 func Visit(name string, root *Node) {
-	name += "." + root.Name
+	if name != "" {
+		name += "."
+	}
+	name += root.Name
 
 	for _, child := range root.Children {
 		Visit(name, child)
