@@ -1,11 +1,11 @@
-package main
+package reporter
 
 import (
-	"log"
 	"fmt"
-	"time"
+	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"io/ioutil"
 	"net/http"
@@ -26,18 +26,18 @@ func newLimiter(l int) limiter {
 var errTimeout = fmt.Errorf("Max tries exceeded")
 
 type Node struct {
-    Name    string
-    Leaf bool
-    Size   int64
-    Children map[string]*Node
+	Name     string
+	Leaf     bool
+	Size     int64
+	Children map[string]*Node
 }
 
-func constructTree(root *Node, details *pb.MetricDetailsResponse) {
+func ConstructTree(root *Node, details *pb.MetricDetailsResponse) {
 	for metric, data := range details.Metrics {
 		currentNode := root
 		parts := strings.Split(metric, ".")
 		leafIndex := len(parts) - 1
-		for index, part := range(parts) {
+		for index, part := range parts {
 			if val, ok := currentNode.Children[part]; ok {
 				currentNode = val
 				continue
@@ -49,14 +49,13 @@ func constructTree(root *Node, details *pb.MetricDetailsResponse) {
 				size = data.Size_
 			}
 			currentNode.Children[part] = &Node{
-				Name: part, 
+				Name:     part,
 				Children: map[string]*Node{},
-				Leaf: isLeaf,
-				Size: size,
+				Leaf:     isLeaf,
+				Size:     size,
 			}
 		}
 	}
-
 
 }
 
@@ -100,34 +99,35 @@ retry:
 }
 
 //Calculates the disk usage in terms of number of files contained
-func count(root *Node) (size int64) {
-    size = 0
-    //if it is a file its size is 1
-    if root.Leaf {
-        return root.Size
-    }
+func Count(root *Node) (size int64) {
+	size = 0
+	//if it is a file its size is 1
+	if root.Leaf {
+		return root.Size
+	}
 
-    for _, child := range root.Children {
-        size +=  count(child)
-    }
+	for _, child := range root.Children {
+		size += Count(child)
+	}
 
-    root.Size = size
-    return size
+	root.Size = size
+	return size
 }
 
-func visit(name string, root *Node) {
-    name += "." + root.Name
-  //  if !root.Leaf {
-  //  }
-    for _, child := range root.Children {
-        visit(name, child)
-    }
-    fmt.Printf("Folder: %s Size: %d\n", name, root.Size)
+func Visit(name string, root *Node) {
+	name += "." + root.Name
+	//  if !root.Leaf {
+	//  }
+	if root.Size > 12245760 {
+		for _, child := range root.Children {
+			Visit(name, child)
+		}
+	}
+	fmt.Printf("Folder: %s Size: %d\n", name, root.Size)
 
 }
 
-
-func getDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
+func GetDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
 	httpClient := &http.Client{Timeout: 120 * time.Second}
 	response := &pb.MetricDetailsResponse{
 		Metrics: make(map[string]*pb.MetricDetails),
@@ -142,7 +142,7 @@ func getDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
 			fetchingLimiter.enter()
 			defer fetchingLimiter.leave()
 			defer wg.Done()
-			url := "http://"+ip+":8080/metrics/details/?format=protobuf"
+			url := "http://" + ip + ":8080/metrics/details/?format=protobuf"
 			data, err := fetchData(httpClient, url)
 			if err != nil {
 				log.Println("timeout during fetching details")
@@ -185,13 +185,4 @@ func getDetails(ips []string, cluster string) *pb.MetricDetailsResponse {
 	response.TotalSpace /= uint64(maxCount)
 
 	return response
-}
-
-func main() {
-	response := getDetails([]string{"127.0.0.1"}, "")
-	root := &Node{Name: "root", Children: map[string]*Node{}}
-	constructTree(root, response)
-	count(root)
-	//fmt.Printf("%v", *root)
-	visit("", root)
 }
