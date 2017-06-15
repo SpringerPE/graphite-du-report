@@ -3,15 +3,27 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/alecthomas/template"
+  packages = [".","parse"]
+  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
   packages = ["carbonzipperpb3"]
   revision = "7a46f4dd058aa11b0e2633cf805428b466533969"
 
 [[projects]]
-  branch = "master"
   name = "github.com/gogo/protobuf"
   packages = ["proto"]
-  revision = "efccd33a0c20aa078705571d5ddbfa14c8395a63"
+  revision = "100ba4e885062801d56799d78530b73b178a78f3"
+  version = "v0.4"
 
 [[projects]]
   branch = "master"
@@ -29,19 +41,25 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom","html/charset"]
-  revision = "1a68b1313cf4ad7778376e82641197b60c02f65c"
+  revision = "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79"
+  revision = "fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "210eee5cf7323015d097341bcf7166130d001cd8"
+  revision = "3491b61b9edc56653ad4333e605e2908e46a036b"
+
+[[projects]]
+  name = "gopkg.in/alecthomas/kingpin.v2"
+  packages = ["."]
+  revision = "7f0871f2e17818990e4eed73f9b5c2f429501228"
+  version = "v2.2.4"
 
 [[projects]]
   branch = "v2"
@@ -52,6 +70,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "055337fcd71e5c801b15b8e672b93b933ff377782a0ab6734e4eb260c5508d86"
+  inputs-digest = "81ec233747721c79d444a2f891081b3d862dcf2367440702a68870d9ca822572"
   solver-name = "gps-cdcl"
   solver-version = 1
