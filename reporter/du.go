@@ -142,6 +142,36 @@ func Visit(name string, root *Node) {
 
 }
 
+func (node *Node) GetNodeSize(path string) (int64, error){
+	steps := strings.Split(path, ".")
+
+	current := node
+	count_steps := 0
+
+	for _, step := range(steps) {
+		if val, ok := current.Children[step]; ok{
+			current = val
+			count_steps += 1
+		}
+	}
+
+	if count_steps == len(steps) - 1 {
+		return current.Size, nil
+	}
+	return int64(0), nil
+}
+
+func (node *Node) GetOrgTotalUsage(paths []string) (int64, error) {
+	size := int64(0)
+
+	for _, path := range(paths) {
+		s, _ := node.GetNodeSize(path)
+		size += int64(s)
+	}
+
+	return size, nil
+}
+
 func GetDetails(ips []string,
 	cluster string,
 	fetcher Fetcher) *pb.MetricDetailsResponse {
