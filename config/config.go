@@ -11,7 +11,13 @@ type Config struct {
 }
 
 func ParseServerList(servers string) []string {
-	return strings.Split(servers, ",")
+	s := strings.Split(servers, ",")
+
+	for index, name := range(s) {
+		s[index] = strings.TrimSpace(name)
+	}
+
+	return s
 }
 
 func DefaultConfig() *Config {
