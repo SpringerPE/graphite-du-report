@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 	"net/http"
@@ -18,14 +19,30 @@ var (
 	bindPort = kingpin.Flag("bind-port", "bind port for this server").Default("6060").OverrideDefaultFromEnvar("BIND_PORT").String()
 )
 
-func getDetails(w http.ResponseWriter, r *http.Request, ips []string) {
+func getDetails(w http.ResponseWriter, r *http.Request, node *reporter.Node) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(&node)
+}
+
+func getNodeSize(w http.ResponseWriter, r *http.Request, node *reporter.Node) {
+	path := r.URL.Query().Get("path")
+	size, _ := node.GetNodeSize(path)
+	w.Write([]byte(fmt.Sprintf("%d", size)))
+}
+
+func getOrgSize(w http.ResponseWriter, r *http.Request, node *reporter.Node) {
+	//path := r.URL.Query().Get("org")
+	size, _ := node.GetOrgTotalUsage([]string{"root.carbon", "root.carbon"})
+	w.Write([]byte(fmt.Sprintf("%d", size)))
+}
+
+func populateDetails(ips []string) *reporter.Node {
 	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
 	response := reporter.GetDetails(ips, "", fetcher)
 	root := &reporter.Node{Name: "root", Children: map[string]*reporter.Node{}}
 	reporter.ConstructTree(root, response)
 	reporter.UpdateSize(root)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(&root)
+	return root
 }
 
 func main() {
@@ -34,10 +51,18 @@ func main() {
 	sList := config.ParseServerList(*serverList)
 	config := &config.Config{Servers: sList, BindAddress: *bindAddress, BindPort: *bindPort}
 
-	log.Println(config)
+	root := populateDetails(config.Servers)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getDetails(w, r, config.Servers)
+		getDetails(w, r, root)
+	})
+
+	http.HandleFunc("/size", func(w http.ResponseWriter, r *http.Request) {
+		getNodeSize(w, r, root)
+	})
+
+	http.HandleFunc("/org_size", func(w http.ResponseWriter, r *http.Request) {
+		getOrgSize(w, r, root)
 	})
 
 	log.Println(http.ListenAndServe(config.BindAddress+":"+config.BindPort, nil))
