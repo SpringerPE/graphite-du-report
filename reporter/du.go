@@ -26,10 +26,10 @@ func newLimiter(l int) limiter {
 var errTimeout = fmt.Errorf("Max tries exceeded")
 
 type Node struct {
-	Name     string
-	Leaf     bool
-	Size     int64
-	Children map[string]*Node
+	Name     string `json: "name"`
+	Leaf     bool `json: "leaf"`
+	Size     int64 `json: "size"`
+	Children map[string]*Node `json: "children"`
 }
 
 func ConstructTree(root *Node, details *pb.MetricDetailsResponse) {
