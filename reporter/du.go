@@ -159,7 +159,7 @@ func GetDetails(ips []string,
 			fetchingLimiter.enter()
 			defer fetchingLimiter.leave()
 			defer wg.Done()
-			url := "http://" + ip + ":8080/metrics/details/?format=protobuf"
+			url := "http://" + ip + "/metrics/details/?format=protobuf"
 			data, err := fetcher.FetchData(url)
 			if err != nil {
 				log.Println("timeout during fetching details")
