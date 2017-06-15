@@ -116,7 +116,7 @@ retry:
 func UpdateSize(root *Node) (size int64) {
 	size = 0
 	//if it is a file its size is 1
-	if root.Leaf {
+	if root.Leaf || len(root.Children) == 0 {
 		return root.Size
 	}
 
