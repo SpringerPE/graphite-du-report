@@ -25,39 +25,85 @@ func newLimiter(l int) limiter {
 
 var errTimeout = fmt.Errorf("Max tries exceeded")
 
-type Node struct {
-	Name     string `json: "name"`
-	Leaf     bool `json: "leaf"`
-	Size     int64 `json: "size"`
-	Children map[string]*Node `json: "children"`
+type Tree struct {
+	Root  *Node
+	nodes map[string]*Node
 }
 
-func ConstructTree(root *Node, details *pb.MetricDetailsResponse) {
+func (tree *Tree) AddNode(key string, node *Node) {
+	key = tree.Root.Name + "." + key
+	tree.nodes[key] = node
+}
+
+func (tree *Tree) All() map[string]*Node {
+	return tree.nodes
+}
+
+func (tree *Tree) GetNodeFromRoot(key string) (*Node, bool) {
+	key = tree.Root.Name + "." + key
+	return tree.GetNode(key)
+}
+
+func (tree *Tree) GetNode(key string) (*Node, bool) {
+
+	if node, ok := tree.nodes[key]; ok {
+		return node, true
+	}
+
+	return nil, false
+}
+
+func NewTree(rootName string) *Tree {
+	root := &Node{Name: rootName, Leaf: false, Size: int64(0), Children: []string{}}
+	nodes := map[string]*Node{rootName: root}
+	return &Tree{Root: root, nodes: nodes}
+}
+
+type Node struct {
+	Name     string   `json: "name"`
+	Leaf     bool     `json: "leaf"`
+	Size     int64    `json: "size"`
+	Children []string `json: "children"`
+}
+
+func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
+
+	var lastVisited *Node
+
 	for metric, data := range details.Metrics {
-		currentNode := root
 		parts := strings.Split(metric, ".")
 		leafIndex := len(parts) - 1
-		for index, part := range parts {
-			if val, ok := currentNode.Children[part]; ok {
-				currentNode = val
+
+		lastVisited = tree.Root
+
+		for currentIndex := 0; currentIndex <= leafIndex; currentIndex++ {
+			currentName := strings.Join(parts[0:currentIndex+1], ".")
+			if val, ok := tree.GetNodeFromRoot(currentName); ok {
+				lastVisited = val
 				continue
 			}
+
 			isLeaf := false
 			size := int64(0)
-			if index == leafIndex {
+
+			if currentIndex == leafIndex {
 				isLeaf = true
 				size = data.Size_
 			}
-			currentNode.Children[part] = &Node{
-				Name:     part,
-				Children: map[string]*Node{},
+
+			currentNode := &Node{
+				Name:     tree.Root.Name + "." + currentName,
+				Children: []string{},
 				Leaf:     isLeaf,
 				Size:     size,
 			}
-			currentNode = currentNode.Children[part]
+
+			tree.AddNode(currentName, currentNode)
+
+			lastVisited.Children = append(lastVisited.Children, parts[currentIndex])
+			lastVisited = currentNode
 		}
 	}
-
 }
 
 type Fetcher interface {
@@ -113,7 +159,7 @@ retry:
 }
 
 //Calculates the disk usage in terms of number of files contained
-func UpdateSize(root *Node) (size int64) {
+func (tree *Tree) UpdateSize(root *Node) (size int64) {
 	size = 0
 	//if it is a file its size is 1
 	if root.Leaf || len(root.Children) == 0 {
@@ -121,51 +167,29 @@ func UpdateSize(root *Node) (size int64) {
 	}
 
 	for _, child := range root.Children {
-		size += UpdateSize(child)
+		node, _ := tree.GetNode(root.Name + "." + child)
+		size += tree.UpdateSize(node)
 	}
 
 	root.Size = size
 	return size
 }
 
-func Visit(name string, root *Node) {
-	if name != "" {
-		name += "."
-	}
-	name += root.Name
-
-	for _, child := range root.Children {
-		Visit(name, child)
-	}
-
-	fmt.Printf("Folder: %s Size: %d\n", name, root.Size)
-
-}
-
-func (node *Node) GetNodeSize(path string) (int64, error){
-	steps := strings.Split(path, ".")
-
-	current := node
-	count_steps := 0
-
-	for _, step := range(steps) {
-		if val, ok := current.Children[step]; ok{
-			current = val
-			count_steps += 1
-		}
-	}
-
-	if count_steps == len(steps) - 1 {
-		return current.Size, nil
-	}
-	return int64(0), nil
-}
-
-func (node *Node) GetOrgTotalUsage(paths []string) (int64, error) {
+func (tree *Tree) GetNodeSize(path string) (int64, error) {
 	size := int64(0)
 
-	for _, path := range(paths) {
-		s, _ := node.GetNodeSize(path)
+	if node, ok := tree.GetNode(path); ok {
+		size = node.Size
+	}
+
+	return size, nil
+}
+
+func (tree *Tree) GetOrgTotalUsage(paths []string) (int64, error) {
+	size := int64(0)
+
+	for _, path := range paths {
+		s, _ := tree.GetNodeSize(path)
 		size += int64(s)
 	}
 

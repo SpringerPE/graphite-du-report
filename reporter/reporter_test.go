@@ -35,23 +35,23 @@ var _ = Describe("Reporter", func() {
 	Describe("Can construct a tree starting from a MetricDetails response", func() {
 		Context("If the response is well formed", func() {
 			It("Can construct the tree", func() {
-				tree := reporter.NewTree()
+				tree := reporter.NewTree("root")
 				reporter.ConstructTree(tree, response)
 				rootChildren := tree.All()
 				Expect(tree.Root.Children).To(HaveLen(2))
 				for _, key := range []string{"team1", "team2"} {
-					Expect(rootChildren).To(HaveKey("root." + key))
+					Expect(rootChildren).To(HaveKey(tree.Root.Name + "." + key))
 				}
 
 				for _, key := range []string{"metric1"} {
-					child, ok := tree.GetNode("root.team1." + key) //rootChildren["team1"].Children
+					child, ok := tree.GetNodeFromRoot("team1." + key) //rootChildren["team1"].Children
 
 					Expect(ok).To(BeTrue())
 					Expect(child.Leaf).To(BeTrue())
 					Expect(child.Size).To(Equal(int64(520192)))
 				}
 				for _, key := range []string{"stats"} {
-					child, ok := tree.GetNode("root.team1." + key) //rootChildren["team1"].Children
+					child, ok := tree.GetNodeFromRoot("team1." + key) //rootChildren["team1"].Children
 
 					Expect(ok).To(BeTrue())
 					Expect(child.Leaf).To(BeFalse())
@@ -63,20 +63,20 @@ var _ = Describe("Reporter", func() {
 	Describe("Can update the nodes metadata in a tree during a visit", func() {
 		Context("Given the root of a tree", func() {
 			It("Can update the metadata", func() {
-				tree := reporter.NewTree()
+				tree := reporter.NewTree("root")
 
 				reporter.ConstructTree(tree, response)
 				tree.UpdateSize(tree.Root)
 
 				fmt.Printf("%#v", tree.Root)
-				team1, _ := tree.GetNode("root.team1")
-				team2, _ := tree.GetNode("root.team2")
+				team1, _ := tree.GetNodeFromRoot("team1")
+				team2, _ := tree.GetNodeFromRoot("team2")
 
 				Expect(team1.Size).To(Equal(int64(1560576)))
 				Expect(team2.Size).To(Equal(int64(2080768)))
 
-				metric1, _ := tree.GetNode("root.team1.metric1")
-				stats, _ := tree.GetNode("root.team2.stats")
+				metric1, _ := tree.GetNodeFromRoot("team1.metric1")
+				stats, _ := tree.GetNodeFromRoot("team2.stats")
 				Expect(metric1.Size).To(Equal(int64(520192)))
 				Expect(stats.Size).To(Equal(int64(1040384)))
 			})
