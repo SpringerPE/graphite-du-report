@@ -37,7 +37,10 @@ func populateDetails(ips []string, rootName string) *reporter.Tree {
 	response := reporter.GetDetails(ips, "", fetcher)
 	cacher := caching.NewRedisCaching()
 	fmt.Printf("root name: %s", rootName)
-	tree := reporter.NewTree(rootName, cacher)
+	tree, err := reporter.NewTree(rootName, cacher)
+	if err != nil {
+		fmt.Println(err)
+	}
 	reporter.ConstructTree(tree, response)
 	root, _ := tree.GetNode(rootName)
 	tree.UpdateSize(root)

@@ -36,7 +36,7 @@ var _ = Describe("Reporter", func() {
 		Context("If the response is well formed", func() {
 			It("Can construct the tree", func() {
 				cacher := caching.NewFakeCaching()
-				tree := reporter.NewTree("root", cacher)
+				tree, _ := reporter.NewTree("root", cacher)
 
 				root, _ := tree.GetNode(tree.RootName)
 				reporter.ConstructTree(tree, response)
@@ -66,7 +66,7 @@ var _ = Describe("Reporter", func() {
 		Context("Given the root of a tree", func() {
 			It("Can update the metadata", func() {
 				cacher := caching.NewFakeCaching()
-				tree := reporter.NewTree("root", cacher)
+				tree, _ := reporter.NewTree("root", cacher)
 				root, _ := tree.GetNode(tree.RootName)
 				reporter.ConstructTree(tree, response)
 				tree.UpdateSize(root)
