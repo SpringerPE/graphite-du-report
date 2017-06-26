@@ -37,10 +37,12 @@ var _ = Describe("Reporter", func() {
 			It("Can construct the tree", func() {
 				cacher := caching.NewFakeCaching()
 				tree := reporter.NewTree("root", cacher)
+
+				root, _ := tree.GetNode(tree.RootName)
 				reporter.ConstructTree(tree, response)
-				Expect(tree.Root.Children).To(HaveLen(2))
+				Expect(root.Children).To(HaveLen(2))
 				for _, key := range []string{"team1", "team2"} {
-					Expect(tree.Root.Children).To(ContainElement(key))
+					Expect(root.Children).To(ContainElement(key))
 				}
 
 				for _, key := range []string{"metric1"} {
@@ -65,9 +67,9 @@ var _ = Describe("Reporter", func() {
 			It("Can update the metadata", func() {
 				cacher := caching.NewFakeCaching()
 				tree := reporter.NewTree("root", cacher)
-
+				root, _ := tree.GetNode(tree.RootName)
 				reporter.ConstructTree(tree, response)
-				tree.UpdateSize(tree.Root)
+				tree.UpdateSize(root)
 
 				team1, _ := tree.GetNodeFromRoot("team1")
 				team2, _ := tree.GetNodeFromRoot("team2")

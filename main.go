@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,11 +21,6 @@ var (
 	rootName    = kingpin.Flag("root-name", "name for the root of the tree").Default("root").OverrideDefaultFromEnvar("ROOT_NAME").String()
 )
 
-func getDetails(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tree.Root)
-}
-
 func getNodeSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
 	path := r.URL.Query().Get("path")
 	size, _ := tree.GetNodeSize(path)
@@ -45,7 +39,7 @@ func populateDetails(ips []string, rootName string) *reporter.Tree {
 	fmt.Printf("root name: %s", rootName)
 	tree := reporter.NewTree(rootName, cacher)
 	reporter.ConstructTree(tree, response)
-	root, _ := tree.GetNode("root")
+	root, _ := tree.GetNode(rootName)
 	tree.UpdateSize(root)
 	return tree
 }
@@ -57,10 +51,6 @@ func main() {
 	config := &config.Config{Servers: sList, BindAddress: *bindAddress, BindPort: *bindPort, RootName: *rootName}
 
 	tree := populateDetails(config.Servers, config.RootName)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getDetails(w, r, tree)
-	})
 
 	http.HandleFunc("/size", func(w http.ResponseWriter, r *http.Request) {
 		getNodeSize(w, r, tree)

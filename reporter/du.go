@@ -28,13 +28,13 @@ func newLimiter(l int) limiter {
 var errTimeout = fmt.Errorf("Max tries exceeded")
 
 type Tree struct {
-	Root   *caching.Node
-	nodes  map[string]*caching.Node
-	cacher caching.Caching
+	RootName string
+	nodes    map[string]*caching.Node
+	cacher   caching.Caching
 }
 
-func (tree *Tree) AddNode(key string, node *caching.Node) {
-	tree.cacher.SetNode(node)
+func (tree *Tree) AddNode(key string, node *caching.Node) error {
+	return tree.cacher.SetNode(node)
 }
 
 func (tree *Tree) All() map[string]*caching.Node {
@@ -42,7 +42,7 @@ func (tree *Tree) All() map[string]*caching.Node {
 }
 
 func (tree *Tree) GetNodeFromRoot(key string) (*caching.Node, error) {
-	key = tree.Root.Name + "." + key
+	key = tree.RootName + "." + key
 	node, err := tree.cacher.GetNode(key)
 	return node, err
 }
@@ -53,22 +53,32 @@ func (tree *Tree) GetNode(key string) (*caching.Node, error) {
 }
 
 func NewTree(rootName string, cacher caching.Caching) *Tree {
-	root := &caching.Node{Name: rootName, Leaf: false, Size: int64(0), Children: []string{}}
+	root := &caching.Node{
+		Name:     rootName,
+		Leaf:     false,
+		Size:     int64(0),
+		Children: []string{},
+	}
+
 	nodes := map[string]*caching.Node{rootName: root}
-	tree := &Tree{Root: root, nodes: nodes, cacher: cacher}
+	tree := &Tree{RootName: rootName, nodes: nodes, cacher: cacher}
 	tree.AddNode(rootName, root)
 	return tree
 }
 
-func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
+func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) error {
 
 	var lastVisited *caching.Node
+	root, err := tree.GetNode(tree.RootName)
+	if err != nil {
+		return err
+	}
 
 	for metric, data := range details.Metrics {
 		parts := strings.Split(metric, ".")
 		leafIndex := len(parts) - 1
 
-		lastVisited = tree.Root
+		lastVisited = root
 
 		for currentIndex := 0; currentIndex <= leafIndex; currentIndex++ {
 			currentName := strings.Join(parts[0:currentIndex+1], ".")
@@ -87,7 +97,7 @@ func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
 			}
 
 			currentNode := &caching.Node{
-				Name:     tree.Root.Name + "." + currentName,
+				Name:     tree.RootName + "." + currentName,
 				Children: []string{},
 				Leaf:     isLeaf,
 				Size:     size,
@@ -100,6 +110,7 @@ func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
 			lastVisited = currentNode
 		}
 	}
+	return nil
 }
 
 type Fetcher interface {
