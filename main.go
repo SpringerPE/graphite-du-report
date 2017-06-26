@@ -34,7 +34,6 @@ func getNodeSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
 }
 
 func getOrgSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
-	//path := r.URL.Query().Get("org")
 	size, _ := tree.GetOrgTotalUsage([]string{"root.carbon", "root.carbon"})
 	w.Write([]byte(fmt.Sprintf("%d", size)))
 }
@@ -42,11 +41,12 @@ func getOrgSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
 func populateDetails(ips []string, rootName string) *reporter.Tree {
 	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
 	response := reporter.GetDetails(ips, "", fetcher)
-	tree := reporter.NewTree(rootName)
-	reporter.ConstructTree(tree, response)
 	cacher := caching.NewRedisCaching()
-	fmt.Println(rootName)
-	tree.UpdateSize(tree.Root, cacher)
+	fmt.Printf("root name: %s", rootName)
+	tree := reporter.NewTree(rootName, cacher)
+	reporter.ConstructTree(tree, response)
+	root, _ := tree.GetNode("root")
+	tree.UpdateSize(root)
 	return tree
 }
 

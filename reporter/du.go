@@ -30,36 +30,34 @@ var errTimeout = fmt.Errorf("Max tries exceeded")
 type Tree struct {
 	Root   *caching.Node
 	nodes  map[string]*caching.Node
-	cacher caching.Cahing
+	cacher caching.Caching
 }
 
 func (tree *Tree) AddNode(key string, node *caching.Node) {
-	key = tree.Root.Name + "." + key
-	tree.nodes[key] = node
+	tree.cacher.SetNode(node)
 }
 
 func (tree *Tree) All() map[string]*caching.Node {
 	return tree.nodes
 }
 
-func (tree *Tree) GetNodeFromRoot(key string) (*caching.Node, bool) {
+func (tree *Tree) GetNodeFromRoot(key string) (*caching.Node, error) {
 	key = tree.Root.Name + "." + key
-	return tree.GetNode(key)
+	node, err := tree.cacher.GetNode(key)
+	return node, err
 }
 
-func (tree *Tree) GetNode(key string) (*caching.Node, bool) {
-
-	if node, ok := tree.nodes[key]; ok {
-		return node, true
-	}
-
-	return nil, false
+func (tree *Tree) GetNode(key string) (*caching.Node, error) {
+	node, err := tree.cacher.GetNode(key)
+	return node, err
 }
 
-func NewTree(rootName string, cacher caching.Cacher) *Tree {
+func NewTree(rootName string, cacher caching.Caching) *Tree {
 	root := &caching.Node{Name: rootName, Leaf: false, Size: int64(0), Children: []string{}}
 	nodes := map[string]*caching.Node{rootName: root}
-	return &Tree{Root: root, nodes: nodes, cacher: cacher}
+	tree := &Tree{Root: root, nodes: nodes, cacher: cacher}
+	tree.AddNode(rootName, root)
+	return tree
 }
 
 func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
@@ -74,7 +72,8 @@ func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
 
 		for currentIndex := 0; currentIndex <= leafIndex; currentIndex++ {
 			currentName := strings.Join(parts[0:currentIndex+1], ".")
-			if val, ok := tree.GetNodeFromRoot(currentName); ok {
+
+			if val, _ := tree.GetNodeFromRoot(currentName); val != nil {
 				lastVisited = val
 				continue
 			}
@@ -96,7 +95,8 @@ func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
 
 			tree.AddNode(currentName, currentNode)
 
-			lastVisited.Children = append(lastVisited.Children, parts[currentIndex])
+			tree.cacher.AddChild(lastVisited, parts[currentIndex])
+
 			lastVisited = currentNode
 		}
 	}
@@ -158,6 +158,7 @@ retry:
 func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	size = 0
 	//if it is a file its size is 1
+	//
 	if root.Leaf || len(root.Children) == 0 {
 		return root.Size
 	}
@@ -174,12 +175,8 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 
 func (tree *Tree) GetNodeSize(path string) (int64, error) {
 	size := int64(0)
-
-	/*	if node, ok := tree.GetNode(path); ok {
-			size = node.Size
-		}
-	*/
-	size
+	node, _ := tree.GetNode(path)
+	size = node.Size
 	return size, nil
 }
 

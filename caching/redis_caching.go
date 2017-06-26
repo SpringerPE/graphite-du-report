@@ -7,15 +7,16 @@ import (
 )
 
 type Node struct {
-	Name     string   `json: "name", redis:"-"`
-	Leaf     bool     `json: "leaf", redis:"leaf"`
-	Size     int64    `json: "size", redis:"size"`
-	Children []string `json: "children", redis:"-"`
+	Name     string   `json:"name" redis:"-"`
+	Leaf     bool     `json:"leaf" redis:"leaf"`
+	Size     int64    `json:"size" redis:"size"`
+	Children []string `json:"children" redis:"-"`
 }
 
 type Caching interface {
 	SetNode(*Node) error
 	GetNode(string) (*Node, error)
+	AddChild(*Node, string) error
 }
 
 type RedisCaching struct {
@@ -41,6 +42,17 @@ func (r *RedisCaching) SetNode(node *Node) error {
 	return err
 }
 
+func (r *RedisCaching) AddChild(node *Node, child string) error {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("SADD", node.Name+":children", child)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
 func (r *RedisCaching) GetNode(key string) (*Node, error) {
 
 	node := &Node{Name: key}
@@ -48,21 +60,30 @@ func (r *RedisCaching) GetNode(key string) (*Node, error) {
 	conn := r.Pool.Get()
 	defer conn.Close()
 	reply, err := redis.Values(conn.Do("HGETALL", key))
-	if err != nil {
-		fmt.Println(err)
+
+	if len(reply) == 0 {
+		return nil, nil
 	}
-	fmt.Printf("%v", reply)
+
+	if err != nil {
+		fmt.Printf("error:%v , reply:%v", err, reply)
+	}
+
 	if err := redis.ScanStruct(reply, node); err != nil {
 		fmt.Println(err)
 	}
-	reply, err = redis.Values(conn.Do("SMEMBERS", key+":children"))
 
-	var children []string
-	if err := redis.ScanSlice(reply, &children); err != nil {
-		fmt.Println(err)
+	fmt.Printf("REPLY %#v\n", node)
+	if node != nil {
+		reply, err = redis.Values(conn.Do("SMEMBERS", key+":children"))
+		var children []string
+		if err := redis.ScanSlice(reply, &children); err != nil {
+			fmt.Println(err)
+		}
+
+		node.Children = children
 	}
-	node.Children = children
-	fmt.Printf("reply: %#v", children)
+	node.Name = key
 	return node, err
 }
 
