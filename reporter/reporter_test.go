@@ -1,7 +1,7 @@
 package reporter_test
 
 import (
-	"fmt"
+	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/reporter"
 
 	. "github.com/onsi/ginkgo"
@@ -35,25 +35,25 @@ var _ = Describe("Reporter", func() {
 	Describe("Can construct a tree starting from a MetricDetails response", func() {
 		Context("If the response is well formed", func() {
 			It("Can construct the tree", func() {
-				tree := reporter.NewTree("root")
+				cacher := caching.NewFakeCaching()
+				tree := reporter.NewTree("root", cacher)
 				reporter.ConstructTree(tree, response)
-				rootChildren := tree.All()
 				Expect(tree.Root.Children).To(HaveLen(2))
 				for _, key := range []string{"team1", "team2"} {
-					Expect(rootChildren).To(HaveKey(tree.Root.Name + "." + key))
+					Expect(tree.Root.Children).To(ContainElement(key))
 				}
 
 				for _, key := range []string{"metric1"} {
-					child, ok := tree.GetNodeFromRoot("team1." + key) //rootChildren["team1"].Children
+					child, err := tree.GetNodeFromRoot("team1." + key)
 
-					Expect(ok).To(BeTrue())
+					Expect(err).To(BeNil())
 					Expect(child.Leaf).To(BeTrue())
 					Expect(child.Size).To(Equal(int64(520192)))
 				}
 				for _, key := range []string{"stats"} {
-					child, ok := tree.GetNodeFromRoot("team1." + key) //rootChildren["team1"].Children
+					child, err := tree.GetNodeFromRoot("team1." + key)
 
-					Expect(ok).To(BeTrue())
+					Expect(err).To(BeNil())
 					Expect(child.Leaf).To(BeFalse())
 				}
 			})
@@ -63,12 +63,12 @@ var _ = Describe("Reporter", func() {
 	Describe("Can update the nodes metadata in a tree during a visit", func() {
 		Context("Given the root of a tree", func() {
 			It("Can update the metadata", func() {
-				tree := reporter.NewTree("root")
+				cacher := caching.NewFakeCaching()
+				tree := reporter.NewTree("root", cacher)
 
 				reporter.ConstructTree(tree, response)
 				tree.UpdateSize(tree.Root)
 
-				fmt.Printf("%#v", tree.Root)
 				team1, _ := tree.GetNodeFromRoot("team1")
 				team2, _ := tree.GetNodeFromRoot("team2")
 
