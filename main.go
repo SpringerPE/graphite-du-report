@@ -8,6 +8,8 @@ import (
 	_ "net/http/pprof"
 	"time"
 
+	"github.com/SpringerPE/graphite-du-report/caching"
+
 	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/reporter"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -42,7 +44,9 @@ func populateDetails(ips []string, rootName string) *reporter.Tree {
 	response := reporter.GetDetails(ips, "", fetcher)
 	tree := reporter.NewTree(rootName)
 	reporter.ConstructTree(tree, response)
-	tree.UpdateSize(tree.Root)
+	cacher := caching.NewRedisCaching()
+	fmt.Println(rootName)
+	tree.UpdateSize(tree.Root, cacher)
 	return tree
 }
 
@@ -50,7 +54,7 @@ func main() {
 	kingpin.Parse()
 
 	sList := config.ParseServerList(*serverList)
-	config := &config.Config{Servers: sList, BindAddress: *bindAddress, BindPort: *bindPort}
+	config := &config.Config{Servers: sList, BindAddress: *bindAddress, BindPort: *bindPort, RootName: *rootName}
 
 	tree := populateDetails(config.Servers, config.RootName)
 

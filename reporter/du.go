@@ -11,6 +11,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/SpringerPE/graphite-du-report/caching"
+
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
@@ -26,25 +28,26 @@ func newLimiter(l int) limiter {
 var errTimeout = fmt.Errorf("Max tries exceeded")
 
 type Tree struct {
-	Root  *Node
-	nodes map[string]*Node
+	Root   *caching.Node
+	nodes  map[string]*caching.Node
+	cacher caching.Cahing
 }
 
-func (tree *Tree) AddNode(key string, node *Node) {
+func (tree *Tree) AddNode(key string, node *caching.Node) {
 	key = tree.Root.Name + "." + key
 	tree.nodes[key] = node
 }
 
-func (tree *Tree) All() map[string]*Node {
+func (tree *Tree) All() map[string]*caching.Node {
 	return tree.nodes
 }
 
-func (tree *Tree) GetNodeFromRoot(key string) (*Node, bool) {
+func (tree *Tree) GetNodeFromRoot(key string) (*caching.Node, bool) {
 	key = tree.Root.Name + "." + key
 	return tree.GetNode(key)
 }
 
-func (tree *Tree) GetNode(key string) (*Node, bool) {
+func (tree *Tree) GetNode(key string) (*caching.Node, bool) {
 
 	if node, ok := tree.nodes[key]; ok {
 		return node, true
@@ -53,22 +56,15 @@ func (tree *Tree) GetNode(key string) (*Node, bool) {
 	return nil, false
 }
 
-func NewTree(rootName string) *Tree {
-	root := &Node{Name: rootName, Leaf: false, Size: int64(0), Children: []string{}}
-	nodes := map[string]*Node{rootName: root}
-	return &Tree{Root: root, nodes: nodes}
-}
-
-type Node struct {
-	Name     string   `json: "name"`
-	Leaf     bool     `json: "leaf"`
-	Size     int64    `json: "size"`
-	Children []string `json: "children"`
+func NewTree(rootName string, cacher caching.Cacher) *Tree {
+	root := &caching.Node{Name: rootName, Leaf: false, Size: int64(0), Children: []string{}}
+	nodes := map[string]*caching.Node{rootName: root}
+	return &Tree{Root: root, nodes: nodes, cacher: cacher}
 }
 
 func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
 
-	var lastVisited *Node
+	var lastVisited *caching.Node
 
 	for metric, data := range details.Metrics {
 		parts := strings.Split(metric, ".")
@@ -91,7 +87,7 @@ func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) {
 				size = data.Size_
 			}
 
-			currentNode := &Node{
+			currentNode := &caching.Node{
 				Name:     tree.Root.Name + "." + currentName,
 				Children: []string{},
 				Leaf:     isLeaf,
@@ -159,7 +155,7 @@ retry:
 }
 
 //Calculates the disk usage in terms of number of files contained
-func (tree *Tree) UpdateSize(root *Node) (size int64) {
+func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	size = 0
 	//if it is a file its size is 1
 	if root.Leaf || len(root.Children) == 0 {
@@ -172,16 +168,18 @@ func (tree *Tree) UpdateSize(root *Node) (size int64) {
 	}
 
 	root.Size = size
+	tree.cacher.SetNode(root)
 	return size
 }
 
 func (tree *Tree) GetNodeSize(path string) (int64, error) {
 	size := int64(0)
 
-	if node, ok := tree.GetNode(path); ok {
-		size = node.Size
-	}
-
+	/*	if node, ok := tree.GetNode(path); ok {
+			size = node.Size
+		}
+	*/
+	size
 	return size, nil
 }
 
