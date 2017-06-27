@@ -1,6 +1,7 @@
 package reporter
 
 import (
+	"fmt"
 	"strings"
 
 	_ "net/http/pprof"
@@ -14,10 +15,11 @@ type Tree struct {
 	RootName string
 	nodes    map[string]*caching.Node
 	cacher   caching.Caching
+	backend  caching.Caching
 }
 
 //Constructor for Tree object
-func NewTree(rootName string, cacher caching.Caching) (*Tree, error) {
+func NewTree(rootName string, cacher caching.Caching, backend caching.Caching) (*Tree, error) {
 	root := &caching.Node{
 		Name:     rootName,
 		Leaf:     false,
@@ -26,7 +28,7 @@ func NewTree(rootName string, cacher caching.Caching) (*Tree, error) {
 	}
 
 	nodes := map[string]*caching.Node{rootName: root}
-	tree := &Tree{RootName: rootName, nodes: nodes, cacher: cacher}
+	tree := &Tree{RootName: rootName, nodes: nodes, cacher: cacher, backend: backend}
 	err := tree.AddNode(rootName, root)
 	return tree, err
 }
@@ -49,6 +51,11 @@ func (tree *Tree) GetNode(key string) (*caching.Node, error) {
 	return node, err
 }
 
+func (tree *Tree) ReadNode(key string) (*caching.Node, error) {
+	node, err := tree.backend.GetNode(key)
+	return node, err
+}
+
 //Calculates the disk usage in terms of number of files contained
 func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	size = 0
@@ -58,6 +65,8 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	}
 
 	for _, child := range root.Children {
+		fmt.Printf("%#v", root.Name+"."+child)
+
 		node, err := tree.GetNode(root.Name + "." + child)
 		if err != nil {
 		}
@@ -65,13 +74,13 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	}
 
 	root.Size = size
-	tree.cacher.SetNode(root)
+	tree.backend.SetNode(root)
 	return size
 }
 
 func (tree *Tree) GetNodeSize(path string) (int64, error) {
 	size := int64(0)
-	node, _ := tree.GetNode(path)
+	node, _ := tree.ReadNode(path)
 	size = node.Size
 	return size, nil
 }

@@ -35,9 +35,12 @@ func getOrgSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
 func populateDetails(ips []string, rootName string) *reporter.Tree {
 	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
 	response := reporter.GetDetails(ips, "", fetcher)
-	cacher := caching.NewRedisCaching()
+	cacher := caching.NewMemCaching()
+	backend := caching.NewRedisCaching()
+	cacher.IncrVersion()
+	backend.IncrVersion()
 	fmt.Printf("root name: %s", rootName)
-	tree, err := reporter.NewTree(rootName, cacher)
+	tree, err := reporter.NewTree(rootName, cacher, backend)
 	if err != nil {
 		fmt.Println(err)
 	}
