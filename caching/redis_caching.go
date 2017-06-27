@@ -37,14 +37,16 @@ func (r *RedisCaching) SetNode(node *Node) error {
 	defer conn.Close()
 
 	version, _ := r.Version()
+	conn.Send("MULTI")
 	versionedName := version + ":" + node.Name
 
-	_, err := conn.Do("HMSET", versionedName, "leaf", node.Leaf, "size", node.Size)
+	conn.Send("HMSET", versionedName, "leaf", node.Leaf, "size", node.Size)
 	for _, child := range node.Children {
-		_, err := conn.Do("SADD", versionedName+":children", child)
-		if err != nil {
-			fmt.Println(err)
-		}
+		conn.Send("SADD", versionedName+":children", child)
+	}
+	_, err := conn.Do("EXEC")
+	if err != nil {
+		fmt.Println(err)
 	}
 	return err
 }

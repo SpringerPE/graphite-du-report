@@ -1,7 +1,6 @@
 package reporter
 
 import (
-	"fmt"
 	"strings"
 
 	_ "net/http/pprof"
@@ -65,8 +64,6 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	}
 
 	for _, child := range root.Children {
-		fmt.Printf("%#v", root.Name+"."+child)
-
 		node, err := tree.GetNode(root.Name + "." + child)
 		if err != nil {
 		}

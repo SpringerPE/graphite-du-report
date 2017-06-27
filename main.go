@@ -47,6 +47,7 @@ func populateDetails(ips []string, rootName string) *reporter.Tree {
 	reporter.ConstructTree(tree, response)
 	root, _ := tree.GetNode(rootName)
 	tree.UpdateSize(root)
+	fmt.Println("Tree initialisation finished")
 	return tree
 }
 
