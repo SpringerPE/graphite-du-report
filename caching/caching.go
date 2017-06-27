@@ -11,4 +11,6 @@ type Caching interface {
 	SetNode(*Node) error
 	GetNode(string) (*Node, error)
 	AddChild(*Node, string) error
+	Version() (string, error)
+	IncrVersion() error
 }
