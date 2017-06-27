@@ -23,7 +23,7 @@ func i2s(values []interface{}) string {
 	return s
 }
 
-func generateMetric(iter *combinatoric.CombinationIterator, details *pb.MetricDetailsResponse, maxDepth int) int {
+func generateMetric(iter *combinatoric.CombinationIterator, details *pb.MetricDetailsResponse, maxDepth int, remaining int) int {
 	depth := random(1, maxDepth)
 	baseName := i2s(iter.Next())
 	for index := 0; index < depth; index++ {
@@ -31,7 +31,11 @@ func generateMetric(iter *combinatoric.CombinationIterator, details *pb.MetricDe
 		baseName = strings.Join([]string{baseName, next}, ".")
 	}
 
-	leaves := random(1, 1024)
+	leaves := remaining
+	if remaining > 1024 {
+		leaves = random(1, 1024)
+	}
+
 	for index := 0; index < leaves; index++ {
 		next := i2s(iter.Next())
 		element := strings.Join([]string{baseName, next}, ".")
@@ -86,11 +90,11 @@ func main() {
 		TotalSpace: uint64(1),
 	}
 
-	total := 2000000
+	remaining := 2000000
 
-	for total > 0 {
-		n := generateMetric(iter, details, 10)
-		total -= n
+	for remaining > 0 {
+		n := generateMetric(iter, details, 10, remaining)
+		remaining -= n
 	}
 
 	http.HandleFunc("/metrics/details/", func(w http.ResponseWriter, r *http.Request) {
