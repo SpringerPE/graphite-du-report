@@ -14,11 +14,11 @@ type Tree struct {
 	RootName string
 	nodes    map[string]*caching.Node
 	cacher   caching.Caching
-	backend  caching.Caching
+	reader   caching.Caching
 }
 
 //Constructor for Tree object
-func NewTree(rootName string, cacher caching.Caching, backend caching.Caching) (*Tree, error) {
+func NewTree(rootName string, cacher caching.Caching, reader caching.Caching) (*Tree, error) {
 	root := &caching.Node{
 		Name:     rootName,
 		Leaf:     false,
@@ -27,9 +27,26 @@ func NewTree(rootName string, cacher caching.Caching, backend caching.Caching) (
 	}
 
 	nodes := map[string]*caching.Node{rootName: root}
-	tree := &Tree{RootName: rootName, nodes: nodes, cacher: cacher, backend: backend}
-	err := tree.AddNode(rootName, root)
+	tree := &Tree{RootName: rootName, nodes: nodes, cacher: cacher, reader: reader}
+	err := tree.IncrVersion()
+	if err != nil {
+		return nil, err
+	}
+	err = tree.AddNode(rootName, root)
 	return tree, err
+}
+
+func (tree *Tree) IncrVersion() error {
+	var err error
+
+	if tree.cacher != tree.reader {
+		err = tree.cacher.IncrVersion()
+	}
+	if err != nil {
+		return err
+	}
+
+	return tree.reader.IncrVersion()
 }
 
 func (tree *Tree) AddNode(key string, node *caching.Node) error {
@@ -51,7 +68,7 @@ func (tree *Tree) GetNode(key string) (*caching.Node, error) {
 }
 
 func (tree *Tree) ReadNode(key string) (*caching.Node, error) {
-	node, err := tree.backend.GetNode(key)
+	node, err := tree.reader.GetNode(key)
 	return node, err
 }
 
@@ -71,7 +88,7 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	}
 
 	root.Size = size
-	tree.backend.SetNode(root)
+	go tree.reader.SetNode(root)
 	return size
 }
 
