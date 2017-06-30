@@ -1,6 +1,7 @@
 package caching
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -31,14 +32,24 @@ func (r *MemCaching) SetNode(node *Node) error {
 	return nil
 }
 
-func (r *MemCaching) AddChild(node *Node, child string) error {
+func (r *MemCaching) AddChild(node *Node, child string) (err error) {
 	version, _ := r.Version()
-	cachedNode := r.nodes[version+":"+node.Name]
-	cachedNode.Children = append(cachedNode.Children, child)
-	return nil
+	if cachedNode, ok := r.nodes[version+":"+node.Name]; ok {
+		cachedNode.Children = append(cachedNode.Children, child)
+	} else {
+		err = fmt.Errorf("Node %s not present in memory", node.Name)
+	}
+	return err
 }
 
 func (r *MemCaching) GetNode(key string) (*Node, error) {
+	var err error
+
 	version, _ := r.Version()
-	return r.nodes[version+":"+key], nil
+	if node, ok := r.nodes[version+":"+key]; ok {
+		return node, nil
+	} else {
+		err = fmt.Errorf("Node %s not present in memory", key)
+		return nil, err
+	}
 }
