@@ -9,6 +9,7 @@ type Config struct {
 	BindAddress string
 	BindPort    string
 	RootName    string
+	RedisAddr   string
 }
 
 func ParseServerList(servers string) []string {
@@ -27,5 +28,6 @@ func DefaultConfig() *Config {
 		BindAddress: "127.0.0.1",
 		BindPort:    "6060",
 		RootName:    "root",
+		RedisAddr:   "localhost:6379",
 	}
 }
