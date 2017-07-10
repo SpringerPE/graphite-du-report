@@ -25,7 +25,7 @@ func (r *RedisCaching) Version() (string, error) {
 	return version, err
 }
 
-func (r *RedisCaching) SetNode(node *Node) error {
+func (r *RedisCaching) UpdateNode(node *Node) error {
 	version, err := r.Version()
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (r *RedisCaching) AddChild(node *Node, child string) error {
 	return err
 }
 
-func (r *RedisCaching) GetNode(key string) (*Node, error) {
+func (r *RedisCaching) ReadNode(key string) (*Node, error) {
 	version, err := r.Version()
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (r *RedisCaching) GetNode(key string) (*Node, error) {
 	return node, nil
 }
 
-func NewRedisCaching(address string) Caching {
+func NewRedisCaching(address string) TreeUpdater {
 	cacher := &RedisCaching{
 		Pool: newPool(address),
 	}

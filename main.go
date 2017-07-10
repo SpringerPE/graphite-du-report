@@ -36,10 +36,10 @@ func getOrgSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
 func populateDetails(config *config.Config) *reporter.Tree {
 	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
 	response := reporter.GetDetails(config.Servers, "", fetcher)
-	cacher := caching.NewMemCaching()
-	reader := caching.NewRedisCaching(config.RedisAddr)
+	builder := caching.NewMemBuilder()
+	updater := caching.NewRedisCaching(config.RedisAddr)
 
-	tree, err := reporter.NewTree(config.RootName, cacher, reader)
+	tree, err := reporter.NewTree(config.RootName, builder, updater)
 	if err != nil {
 		fmt.Println(err)
 	}

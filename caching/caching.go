@@ -7,10 +7,20 @@ type Node struct {
 	Children []string `json:"children" redis:"-"`
 }
 
-type Caching interface {
-	SetNode(*Node) error
+type TreeBuilder interface {
 	GetNode(string) (*Node, error)
+	AddNode(*Node) error
 	AddChild(*Node, string) error
+}
+
+type TreeUpdater interface {
 	Version() (string, error)
 	IncrVersion() error
+	UpdateNode(*Node) error
+	ReadNode(string) (*Node, error)
+}
+
+type TreeBuilderUpdater interface {
+	TreeBuilder
+	TreeUpdater
 }

@@ -1,9 +1,8 @@
 package reporter
 
 import (
-	"strings"
-
 	_ "net/http/pprof"
+	"strings"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
 
@@ -13,12 +12,12 @@ import (
 type Tree struct {
 	RootName string
 	nodes    map[string]*caching.Node
-	cacher   caching.Caching
-	reader   caching.Caching
+	builder  caching.TreeBuilder
+	updater  caching.TreeUpdater
 }
 
 //Constructor for Tree object
-func NewTree(rootName string, cacher caching.Caching, reader caching.Caching) (*Tree, error) {
+func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeUpdater) (*Tree, error) {
 	root := &caching.Node{
 		Name:     rootName,
 		Leaf:     false,
@@ -27,7 +26,7 @@ func NewTree(rootName string, cacher caching.Caching, reader caching.Caching) (*
 	}
 
 	nodes := map[string]*caching.Node{rootName: root}
-	tree := &Tree{RootName: rootName, nodes: nodes, cacher: cacher, reader: reader}
+	tree := &Tree{RootName: rootName, nodes: nodes, builder: builder, updater: updater}
 	err := tree.IncrVersion()
 	if err != nil {
 		return nil, err
@@ -37,24 +36,15 @@ func NewTree(rootName string, cacher caching.Caching, reader caching.Caching) (*
 }
 
 func (tree *Tree) IncrVersion() error {
-	var err error
-
-	if tree.cacher != tree.reader {
-		err = tree.cacher.IncrVersion()
-	}
-	if err != nil {
-		return err
-	}
-
-	return tree.reader.IncrVersion()
+	return tree.updater.IncrVersion()
 }
 
 func (tree *Tree) AddNode(key string, node *caching.Node) error {
-	return tree.cacher.SetNode(node)
+	return tree.builder.AddNode(node)
 }
 
 func (tree *Tree) AddChild(node *caching.Node, child string) error {
-	return tree.cacher.AddChild(node, child)
+	return tree.builder.AddChild(node, child)
 }
 
 func (tree *Tree) GetNodeFromRoot(key string) (*caching.Node, error) {
@@ -63,12 +53,12 @@ func (tree *Tree) GetNodeFromRoot(key string) (*caching.Node, error) {
 }
 
 func (tree *Tree) GetNode(key string) (*caching.Node, error) {
-	node, err := tree.cacher.GetNode(key)
+	node, err := tree.builder.GetNode(key)
 	return node, err
 }
 
 func (tree *Tree) ReadNode(key string) (*caching.Node, error) {
-	node, err := tree.reader.GetNode(key)
+	node, err := tree.updater.ReadNode(key)
 	return node, err
 }
 
@@ -88,7 +78,7 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 	}
 
 	root.Size = size
-	go tree.reader.SetNode(root)
+	go tree.updater.UpdateNode(root)
 	return size
 }
 

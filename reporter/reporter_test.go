@@ -35,9 +35,9 @@ var _ = Describe("Reporter", func() {
 	Describe("Can construct a tree starting from a MetricDetails response", func() {
 		Context("If the response is well formed", func() {
 			It("Can construct the tree", func() {
-				cacher := caching.NewMemCaching()
-				backend := caching.NewMemCaching()
-				tree, _ := reporter.NewTree("root", cacher, backend)
+				builder := caching.NewMemBuilder()
+				updater := caching.NewMemUpdater()
+				tree, _ := reporter.NewTree("root", builder, updater)
 
 				root, _ := tree.GetNode(tree.RootName)
 				reporter.ConstructTree(tree, response)
@@ -66,9 +66,9 @@ var _ = Describe("Reporter", func() {
 	Describe("Can update the nodes metadata in a tree during a visit", func() {
 		Context("Given the root of a tree", func() {
 			It("Can update the metadata", func() {
-				cacher := caching.NewMemCaching()
-				backend := caching.NewMemCaching()
-				tree, _ := reporter.NewTree("root", cacher, backend)
+				builder := caching.NewMemBuilder()
+				updater := caching.NewMemUpdater()
+				tree, _ := reporter.NewTree("root", builder, updater)
 				root, _ := tree.GetNode(tree.RootName)
 				reporter.ConstructTree(tree, response)
 				tree.UpdateSize(root)

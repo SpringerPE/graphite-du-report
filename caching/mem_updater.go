@@ -3,36 +3,41 @@ package caching
 import (
 	"fmt"
 	"strconv"
+	"sync"
 )
 
-type MemCaching struct {
+type MemUpdater struct {
 	nodes   map[string]*Node
 	version int
+	mutex   *sync.RWMutex
 }
 
-func NewMemCaching() Caching {
-	return &MemCaching{
+func NewMemUpdater() TreeUpdater {
+	return &MemUpdater{
 		nodes:   make(map[string]*Node),
 		version: 0,
+		mutex:   &sync.RWMutex{},
 	}
 }
 
-func (r *MemCaching) IncrVersion() error {
+func (r *MemUpdater) IncrVersion() error {
 	r.version = r.version + 1
 	return nil
 }
 
-func (r *MemCaching) Version() (string, error) {
+func (r *MemUpdater) Version() (string, error) {
 	return strconv.Itoa(r.version), nil
 }
 
-func (r *MemCaching) SetNode(node *Node) error {
+func (r *MemUpdater) UpdateNode(node *Node) error {
 	version, _ := r.Version()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	r.nodes[version+":"+node.Name] = node
 	return nil
 }
 
-func (r *MemCaching) AddChild(node *Node, child string) (err error) {
+/*func (r *MemCaching) AddChild(node *Node, child string) (err error) {
 	version, _ := r.Version()
 	if cachedNode, ok := r.nodes[version+":"+node.Name]; ok {
 		cachedNode.Children = append(cachedNode.Children, child)
@@ -40,9 +45,9 @@ func (r *MemCaching) AddChild(node *Node, child string) (err error) {
 		err = fmt.Errorf("Node %s not present in memory", node.Name)
 	}
 	return err
-}
+}*/
 
-func (r *MemCaching) GetNode(key string) (*Node, error) {
+func (r *MemUpdater) ReadNode(key string) (*Node, error) {
 	var err error
 
 	version, _ := r.Version()
