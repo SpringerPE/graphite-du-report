@@ -27,11 +27,7 @@ func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeU
 
 	nodes := map[string]*caching.Node{rootName: root}
 	tree := &Tree{RootName: rootName, nodes: nodes, builder: builder, updater: updater}
-	err := tree.IncrVersion()
-	if err != nil {
-		return nil, err
-	}
-	err = tree.AddNode(rootName, root)
+	err := tree.AddNode(rootName, root)
 	return tree, err
 }
 
@@ -57,16 +53,18 @@ func (tree *Tree) GetNode(key string) (*caching.Node, error) {
 	return node, err
 }
 
-func (tree *Tree) ReadNode(key string) (*caching.Node, error) {
-	node, err := tree.updater.ReadNode(key)
-	return node, err
+//Calculates the disk usage in terms of number of files contained
+func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
+	return tree.updateSize(root, nil)
 }
 
 //Calculates the disk usage in terms of number of files contained
-func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
+func (tree *Tree) updateSize(root *caching.Node, parent *caching.Node) (size int64) {
 	size = 0
 	//if it is a leaf its size is already given
 	if root.Leaf || len(root.Children) == 0 {
+		parent.Leaf = true
+		parent.Children = []string{}
 		return root.Size
 	}
 
@@ -74,30 +72,12 @@ func (tree *Tree) UpdateSize(root *caching.Node) (size int64) {
 		node, err := tree.GetNode(root.Name + "." + child)
 		if err != nil {
 		}
-		size += tree.UpdateSize(node)
+		size += tree.updateSize(node, root)
 	}
 
 	root.Size = size
 	go tree.updater.UpdateNode(root)
 	return size
-}
-
-func (tree *Tree) GetNodeSize(path string) (int64, error) {
-	size := int64(0)
-	node, _ := tree.ReadNode(path)
-	size = node.Size
-	return size, nil
-}
-
-func (tree *Tree) GetOrgTotalUsage(paths []string) (int64, error) {
-	size := int64(0)
-
-	for _, path := range paths {
-		s, _ := tree.GetNodeSize(path)
-		size += int64(s)
-	}
-
-	return size, nil
 }
 
 /* Takes in input a protocol buffer object representing a details response
