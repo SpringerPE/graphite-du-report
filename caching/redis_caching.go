@@ -1,7 +1,10 @@
 package caching
 
 import (
+	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -9,11 +12,73 @@ type RedisCaching struct {
 	Pool *redis.Pool
 }
 
+func (r *RedisCaching) Cleanup(rootName string) error {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.Version()
+	fmt.Printf("%v", version)
+	if err != nil {
+		return err
+	}
+	rxp, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, rootName))
+	if err != nil {
+		return err
+	}
+
+	var (
+		cursor int64
+		items  []string
+	)
+
+	for {
+
+		values, err := redis.Values(conn.Do("SCAN", cursor, "count", 1000))
+		if err != nil {
+			return err
+		}
+
+		values, err = redis.Scan(values, &cursor, &items)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("%v\n", items)
+		conn.Send("MULTI")
+		for _, x := range items {
+			if ok := rxp.MatchString(x); !strings.HasPrefix(x, "version") && !ok {
+				conn.Send("DEL", x)
+			}
+		}
+		_, err = conn.Do("EXEC")
+		if err != nil {
+			return err
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+	return nil
+}
+
 func (r *RedisCaching) IncrVersion() error {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
-	_, err := conn.Do("INCR", "version")
+	_, err := conn.Do("INCR", "version.next")
+	return err
+}
+
+func (r *RedisCaching) UpdateReaderVersion() error {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	next_version, err := redis.String(conn.Do("GET", "version.next"))
+	if err != nil {
+		return err
+	}
+	_, err = conn.Do("SET", "version", next_version)
 	return err
 }
 
@@ -25,8 +90,16 @@ func (r *RedisCaching) Version() (string, error) {
 	return version, err
 }
 
+func (r *RedisCaching) VersionNext() (string, error) {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := redis.String(conn.Do("GET", "version.next"))
+	return version, err
+}
+
 func (r *RedisCaching) UpdateNode(node *Node) error {
-	version, err := r.Version()
+	version, err := r.VersionNext()
 	if err != nil {
 		return err
 	}
@@ -47,7 +120,7 @@ func (r *RedisCaching) UpdateNode(node *Node) error {
 }
 
 func (r *RedisCaching) AddChild(node *Node, child string) error {
-	version, err := r.Version()
+	version, err := r.VersionNext()
 	if err != nil {
 		return err
 	}

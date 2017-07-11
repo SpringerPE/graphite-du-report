@@ -15,9 +15,12 @@ type TreeBuilder interface {
 
 type TreeUpdater interface {
 	Version() (string, error)
+	VersionNext() (string, error)
 	IncrVersion() error
+	UpdateReaderVersion() error
 	UpdateNode(*Node) error
 	ReadNode(string) (*Node, error)
+	Cleanup(string) error
 }
 
 type TreeBuilderUpdater interface {
