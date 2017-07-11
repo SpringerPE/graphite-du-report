@@ -7,17 +7,23 @@ import (
 )
 
 type MemUpdater struct {
-	nodes   map[string]*Node
-	version int
-	mutex   *sync.RWMutex
+	nodes       map[string]*Node
+	version     int
+	versionNext int
+	mutex       *sync.RWMutex
 }
 
 func NewMemUpdater() TreeUpdater {
 	return &MemUpdater{
-		nodes:   make(map[string]*Node),
-		version: 0,
-		mutex:   &sync.RWMutex{},
+		nodes:       make(map[string]*Node),
+		version:     0,
+		versionNext: 0,
+		mutex:       &sync.RWMutex{},
 	}
+}
+
+func (r *MemUpdater) Cleanup(name string) error {
+	return nil
 }
 
 func (r *MemUpdater) IncrVersion() error {
@@ -25,8 +31,17 @@ func (r *MemUpdater) IncrVersion() error {
 	return nil
 }
 
+func (r *MemUpdater) UpdateReaderVersion() error {
+	r.version = r.versionNext
+	return nil
+}
+
 func (r *MemUpdater) Version() (string, error) {
 	return strconv.Itoa(r.version), nil
+}
+
+func (r *MemUpdater) VersionNext() (string, error) {
+	return strconv.Itoa(r.versionNext), nil
 }
 
 func (r *MemUpdater) UpdateNode(node *Node) error {
