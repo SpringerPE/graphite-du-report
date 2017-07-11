@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-	"time"
+	"strings"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
 
@@ -22,33 +22,17 @@ var (
 	redisAddr   = kingpin.Flag("redis-addr", "bind address for the redis instance").Default("localhost:6379").OverrideDefaultFromEnvar("REDIS_ADDR").String()
 )
 
-func getNodeSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
+func getNodeSize(w http.ResponseWriter, r *http.Request, tree *reporter.TreeReader) {
 	path := r.URL.Query().Get("path")
 	size, _ := tree.GetNodeSize(path)
 	w.Write([]byte(fmt.Sprintf("%d", size)))
 }
 
-func getOrgSize(w http.ResponseWriter, r *http.Request, tree *reporter.Tree) {
-	size, _ := tree.GetOrgTotalUsage([]string{"root.carbon", "root.carbon"})
-	w.Write([]byte(fmt.Sprintf("%d", size)))
-}
-
-func populateDetails(config *config.Config) *reporter.Tree {
-	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
-	response := reporter.GetDetails(config.Servers, "", fetcher)
-	builder := caching.NewMemBuilder()
-	updater := caching.NewRedisCaching(config.RedisAddr)
-
-	tree, err := reporter.NewTree(config.RootName, builder, updater)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	reporter.ConstructTree(tree, response)
-	root, _ := tree.GetNode(config.RootName)
-	tree.UpdateSize(root)
-	fmt.Println("Tree initialisation finished")
-	return tree
+func visit(w http.ResponseWriter, r *http.Request, tree *reporter.TreeReader, config *config.Config) {
+	root, _ := tree.ReadNode(config.RootName)
+	flame := []string{}
+	tree.Visit(root, &flame)
+	w.Write([]byte(fmt.Sprintf("%s", strings.Join(flame, "\n"))))
 }
 
 func main() {
@@ -62,14 +46,14 @@ func main() {
 		RedisAddr: *redisAddr,
 	}
 
-	tree := populateDetails(config)
-
+	reader := caching.NewRedisCaching(config.RedisAddr)
+	treeReader, _ := reporter.NewTreeReader(config.RootName, reader)
 	http.HandleFunc("/size", func(w http.ResponseWriter, r *http.Request) {
-		getNodeSize(w, r, tree)
+		getNodeSize(w, r, treeReader)
 	})
 
-	http.HandleFunc("/org_size", func(w http.ResponseWriter, r *http.Request) {
-		getOrgSize(w, r, tree)
+	http.HandleFunc("/visit", func(w http.ResponseWriter, r *http.Request) {
+		visit(w, r, treeReader, config)
 	})
 
 	log.Println(http.ListenAndServe(config.BindAddress+":"+config.BindPort, nil))
