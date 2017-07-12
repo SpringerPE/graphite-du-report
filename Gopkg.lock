@@ -15,6 +15,18 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/ecooper/combinatoric"
+  packages = ["."]
+  revision = "16ea83278464ced0df18da4093c4b2dc8a5faaab"
+
+[[projects]]
+  name = "github.com/garyburd/redigo"
+  packages = ["internal","redis"]
+  revision = "433969511232c397de61b1442f9fd49ec06ae9ba"
+  version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
   packages = ["carbonzipperpb3"]
   revision = "7a46f4dd058aa11b0e2633cf805428b466533969"
@@ -26,34 +38,46 @@
   version = "v0.4"
 
 [[projects]]
+  name = "github.com/gorilla/context"
+  packages = ["."]
+  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  revision = "bcd8bc72b08df0f70df986b97f95590779502d31"
+  version = "v1.4.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/onsi/ginkgo"
   packages = [".","config","internal/codelocation","internal/containernode","internal/failer","internal/leafnodes","internal/remote","internal/spec","internal/spec_iterator","internal/specrunner","internal/suite","internal/testingtproxy","internal/writer","reporters","reporters/stenographer","reporters/stenographer/support/go-colorable","reporters/stenographer/support/go-isatty","types"]
-  revision = "a1f616c97771e46da1722d3aa9dcde0a43f55682"
+  revision = "1e72798a2620664d2ab32ffd4473c102fcd4894d"
 
 [[projects]]
   branch = "master"
   name = "github.com/onsi/gomega"
   packages = [".","format","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
-  revision = "39a54bd3c3bbfe1c331a9b3207e92134c77ed812"
+  revision = "c990b8b3a34c8814a6657daebe8e19ff4d9647a1"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom","html/charset"]
-  revision = "ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd"
+  revision = "f01ecb60fe3835d80d9a0b7b2bf24b228c89260e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a"
+  revision = "abf9c25f54453410d0c6668e519582a9e1115027"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "3491b61b9edc56653ad4333e605e2908e46a036b"
+  revision = "cfdf022e86b4ecfb646e1efbd7db175dd623a8fa"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -65,11 +89,11 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b"
+  revision = "1be3d31502d6eabc0dd7ce5b0daab022e14a5538"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "81ec233747721c79d444a2f891081b3d862dcf2367440702a68870d9ca822572"
+  inputs-digest = "188d20c05d0bf1751ed83d2d8414ab202e2e7272fe588dd55b6833139d59a136"
   solver-name = "gps-cdcl"
   solver-version = 1
