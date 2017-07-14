@@ -44,11 +44,13 @@ func (r *MemUpdater) VersionNext() (string, error) {
 	return strconv.Itoa(r.versionNext), nil
 }
 
-func (r *MemUpdater) UpdateNode(node *Node) error {
+func (r *MemUpdater) UpdateNodes(nodes []*Node) error {
 	version, _ := r.Version()
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	r.nodes[version+":"+node.Name] = node
+	for _, node := range nodes {
+		r.nodes[version+":"+node.Name] = node
+	}
 	return nil
 }
 
@@ -61,6 +63,11 @@ func (r *MemUpdater) UpdateNode(node *Node) error {
 	}
 	return err
 }*/
+
+//TODO
+func (r *MemUpdater) ReadFlameMap() (map[string]int64, error) {
+	return nil, nil
+}
 
 func (r *MemUpdater) ReadNode(key string) (*Node, error) {
 	var err error

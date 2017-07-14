@@ -46,18 +46,16 @@ var _ = Describe("Reporter", func() {
 					Expect(root.Children).To(ContainElement(key))
 				}
 
-				for _, key := range []string{"metric1"} {
-					child, err := tree.GetNodeFromRoot("team1." + key)
-
-					Expect(err).To(BeNil())
-					Expect(child.Leaf).To(BeTrue())
-					Expect(child.Size).To(Equal(int64(520192)))
-				}
 				for _, key := range []string{"stats"} {
 					child, err := tree.GetNodeFromRoot("team1." + key)
 
 					Expect(err).To(BeNil())
 					Expect(child.Leaf).To(BeFalse())
+					Expect(child.Size).To(Equal(int64(1040384)))
+				}
+				for _, key := range []string{"metric1"} {
+					_, err := tree.GetNodeFromRoot("team1." + key)
+					Expect(err).NotTo(BeNil())
 				}
 			})
 		})
@@ -79,10 +77,25 @@ var _ = Describe("Reporter", func() {
 				Expect(team1.Size).To(Equal(int64(1560576)))
 				Expect(team2.Size).To(Equal(int64(2080768)))
 
-				metric1, _ := tree.GetNodeFromRoot("team1.metric1")
 				stats, _ := tree.GetNodeFromRoot("team2.stats")
-				Expect(metric1.Size).To(Equal(int64(520192)))
 				Expect(stats.Size).To(Equal(int64(1040384)))
+			})
+		})
+	})
+
+	Describe("Gets the list of the nodes for the flame graph", func() {
+		Context("Given the root of a tree", func() {
+			It("Can get the list", func() {
+				builder := caching.NewMemBuilder()
+				updater := caching.NewMemUpdater()
+				tree, _ := reporter.NewTree("root", builder, updater)
+				reader, _ := reporter.NewTreeReader("root", updater)
+
+				root, _ := tree.GetNode(tree.RootName)
+				reporter.ConstructTree(tree, response)
+				tree.UpdateSize(root)
+				flame := []string{}
+				reader.Visit(root, &flame)
 			})
 		})
 	})

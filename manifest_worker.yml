@@ -1,0 +1,13 @@
+---
+applications:
+- name: graphite_worker
+  memory: 1G
+  env:
+    GO15VENDOREXPERIMENT: 1
+    GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
+    REDIS_ADDR: "10.230.38.76:6379"
+    REDIS_PASSWD: "password"
+    UPDATE_ROUTINES: 10
+    BULK_UPDATES: 100
+    BULK_SCANS: 100
+    ROLE: "worker"

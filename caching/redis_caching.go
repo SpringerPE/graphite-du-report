@@ -9,7 +9,12 @@ import (
 )
 
 type RedisCaching struct {
-	Pool *redis.Pool
+	Pool      *redis.Pool
+	BulkScans int
+}
+
+func (r *RedisCaching) SetNumBulkScans(num int) {
+	r.BulkScans = num
 }
 
 func (r *RedisCaching) Cleanup(rootName string) error {
@@ -17,11 +22,12 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 	defer conn.Close()
 
 	version, err := r.Version()
-	fmt.Printf("%v", version)
 	if err != nil {
 		return err
 	}
 	rxp, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, rootName))
+	rxp_folded, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, "folded"))
+
 	if err != nil {
 		return err
 	}
@@ -32,8 +38,7 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 	)
 
 	for {
-
-		values, err := redis.Values(conn.Do("SCAN", cursor, "count", 1000))
+		values, err := redis.Values(conn.Do("SCAN", cursor, "count", 5000))
 		if err != nil {
 			return err
 		}
@@ -43,12 +48,18 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 			return err
 		}
 
-		fmt.Printf("%v\n", items)
 		conn.Send("MULTI")
 		for _, x := range items {
-			if ok := rxp.MatchString(x); !strings.HasPrefix(x, "version") && !ok {
-				conn.Send("DEL", x)
+			if rxp.MatchString(x) {
+				continue
 			}
+			if rxp_folded.MatchString(x) {
+				continue
+			}
+			if strings.HasPrefix(x, "version") {
+				continue
+			}
+			conn.Send("DEL", x)
 		}
 		_, err = conn.Do("EXEC")
 		if err != nil {
@@ -98,7 +109,7 @@ func (r *RedisCaching) VersionNext() (string, error) {
 	return version, err
 }
 
-func (r *RedisCaching) UpdateNode(node *Node) error {
+func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 	version, err := r.VersionNext()
 	if err != nil {
 		return err
@@ -108,11 +119,13 @@ func (r *RedisCaching) UpdateNode(node *Node) error {
 	defer conn.Close()
 
 	conn.Send("MULTI")
-	versionedName := version + ":" + node.Name
-
-	conn.Send("HMSET", versionedName, "leaf", node.Leaf, "size", node.Size)
-	for _, child := range node.Children {
-		conn.Send("SADD", versionedName+":children", child)
+	for _, node := range nodes {
+		versionedName := version + ":" + node.Name
+		conn.Send("HMSET", versionedName, "leaf", node.Leaf, "size", node.Size)
+		conn.Send("HMSET", version+":folded", node.Name, node.Size)
+		for _, child := range node.Children {
+			conn.Send("SADD", versionedName+":children", child)
+		}
 	}
 	_, err = conn.Do("EXEC")
 
@@ -132,6 +145,18 @@ func (r *RedisCaching) AddChild(node *Node, child string) error {
 
 	_, err = conn.Do("SADD", versionedName+":children", child)
 	return err
+}
+
+func (r *RedisCaching) ReadFlameMap() (map[string]int64, error) {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.Version()
+	if err != nil {
+		return nil, err
+	}
+
+	return redis.Int64Map(conn.Do("HGETALL", version+":folded"))
 }
 
 func (r *RedisCaching) ReadNode(key string) (*Node, error) {
@@ -167,20 +192,32 @@ func (r *RedisCaching) ReadNode(key string) (*Node, error) {
 	return node, nil
 }
 
-func NewRedisCaching(address string) TreeUpdater {
+func NewRedisCaching(address string, passwd string) *RedisCaching {
 	cacher := &RedisCaching{
-		Pool: newPool(address),
+		Pool:      newPool(address, passwd),
+		BulkScans: 10,
 	}
 	return cacher
 }
 
-func newPool(addr string) *redis.Pool {
+func newPool(addr string, passwd string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
 		Wait:        true,
 		MaxActive:   10,
 		IdleTimeout: 5 * time.Second,
-		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial(
+				"tcp",
+				addr,
+				redis.DialPassword(passwd),
+				redis.DialConnectTimeout(10*time.Second),
+			)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
 	}
 }
 

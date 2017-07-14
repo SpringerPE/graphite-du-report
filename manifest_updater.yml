@@ -1,0 +1,15 @@
+---
+applications:
+- name: graphite_updater
+  memory: 4G
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git#v1.8.5
+  env:
+    GOVERSION: 1.8
+    GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
+    GRAPHITE_SERVERS: "pe-prod-dogo-graphite-01.springer-sbm.com:8080,pe-prod-dogo-graphite-02.springer-sbm.com:8080,pe-prod-dogo-graphite-03.springer-sbm.com:8080"
+    REDIS_ADDR: "10.230.38.76:6379"
+    REDIS_PASSWD: "password"
+    UPDATE_ROUTINES: 2
+    BULK_UPDATES: 100
+    BULK_SCANS: 100
+    ROLE: "updater"

@@ -24,6 +24,10 @@ func (tree *TreeReader) ReadNode(key string) (*caching.Node, error) {
 	return node, err
 }
 
+func (tree *TreeReader) ReadFlameMap() (map[string]int64, error) {
+	return tree.reader.ReadFlameMap()
+}
+
 //Calculates the disk usage in terms of number of files contained
 func (tree *TreeReader) Visit(root *caching.Node, doc *[]string) {
 	//if it is a leaf its size is already given
@@ -39,8 +43,6 @@ func (tree *TreeReader) Visit(root *caching.Node, doc *[]string) {
 		}
 		tree.Visit(node, doc)
 	}
-
-	//tree.updater.Visit(root)
 }
 
 func (tree *TreeReader) GetNodeSize(path string) (int64, error) {

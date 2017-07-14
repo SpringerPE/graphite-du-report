@@ -11,7 +11,7 @@ var _ = Describe("Config", func() {
 
 	Describe("Default configuration", func() {
 		It("default config contains the expected parameters", func() {
-			c := config.DefaultConfig()
+			c := config.DefaultUpdaterConfig()
 			Expect(c.Servers).To(Equal([]string{"127.0.0.1:8080"}))
 		})
 	})
@@ -20,7 +20,7 @@ var _ = Describe("Config", func() {
 		It("returns a list of the servers", func() {
 			s := "example.host:8080, 127.0.0.1:7777 , my.host:80"
 			sList := config.ParseServerList(s)
-			Expect(sList).To(Equal([]string{"example.host:8080","127.0.0.1:7777","my.host:80"}))
+			Expect(sList).To(Equal([]string{"example.host:8080", "127.0.0.1:7777", "my.host:80"}))
 		})
 	})
 })
