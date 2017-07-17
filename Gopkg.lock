@@ -53,13 +53,19 @@
   branch = "master"
   name = "github.com/onsi/ginkgo"
   packages = [".","config","internal/codelocation","internal/containernode","internal/failer","internal/leafnodes","internal/remote","internal/spec","internal/spec_iterator","internal/specrunner","internal/suite","internal/testingtproxy","internal/writer","reporters","reporters/stenographer","reporters/stenographer/support/go-colorable","reporters/stenographer/support/go-isatty","types"]
-  revision = "1e72798a2620664d2ab32ffd4473c102fcd4894d"
+  revision = "2e502de24aff772bf285d36161b79eb44a01bcb3"
 
 [[projects]]
   branch = "master"
   name = "github.com/onsi/gomega"
   packages = [".","format","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
-  revision = "c990b8b3a34c8814a6657daebe8e19ff4d9647a1"
+  revision = "efdc5a1179ed51cf9ea59b0b8ce061408b66f2d9"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/uber/go-torch"
+  packages = ["renderer","stack"]
+  revision = "31163c52574978688e99810c1761f36d9191a875"
 
 [[projects]]
   branch = "master"
@@ -71,13 +77,13 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "abf9c25f54453410d0c6668e519582a9e1115027"
+  revision = "4cd6d1a821c7175768725b55ca82f14683a29ea4"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "cfdf022e86b4ecfb646e1efbd7db175dd623a8fa"
+  revision = "836efe42bb4aa16aaa17b9c155d8813d336ed720"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -89,11 +95,11 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "1be3d31502d6eabc0dd7ce5b0daab022e14a5538"
+  revision = "3b4ad1db5b2a649883ff3782f5f9f6fb52be71af"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "188d20c05d0bf1751ed83d2d8414ab202e2e7272fe588dd55b6833139d59a136"
+  inputs-digest = "47c24b3b530d6fbbe0f087a094f17046459121cddbe4000f4a69f5207941fc39"
   solver-name = "gps-cdcl"
   solver-version = 1
