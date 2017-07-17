@@ -76,7 +76,7 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 func (r *RedisCaching) IncrVersion() error {
 	conn := r.Pool.Get()
 	defer conn.Close()
-
+	//TODO: increment with module operation
 	_, err := conn.Do("INCR", "version.next")
 	return err
 }
@@ -110,6 +110,7 @@ func (r *RedisCaching) VersionNext() (string, error) {
 }
 
 func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
+	var nodeEntry string
 	version, err := r.VersionNext()
 	if err != nil {
 		return err
@@ -122,7 +123,13 @@ func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 	for _, node := range nodes {
 		versionedName := version + ":" + node.Name
 		conn.Send("HMSET", versionedName, "leaf", node.Leaf, "size", node.Size)
-		conn.Send("HMSET", version+":folded", node.Name, node.Size)
+		//save in folded format as well for flame graphs
+		entryName := strings.Replace(node.Name, ".", ";", -1)
+		if node.Leaf == true {
+			nodeEntry = fmt.Sprintf("%s %d", entryName, node.Size)
+			conn.Send("LPUSH", version+":folded", nodeEntry)
+		}
+
 		for _, child := range node.Children {
 			conn.Send("SADD", versionedName+":children", child)
 		}
@@ -147,7 +154,7 @@ func (r *RedisCaching) AddChild(node *Node, child string) error {
 	return err
 }
 
-func (r *RedisCaching) ReadFlameMap() (map[string]int64, error) {
+func (r *RedisCaching) ReadFlameMap() ([]string, error) {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
@@ -156,7 +163,7 @@ func (r *RedisCaching) ReadFlameMap() (map[string]int64, error) {
 		return nil, err
 	}
 
-	return redis.Int64Map(conn.Do("HGETALL", version+":folded"))
+	return redis.Strings(conn.Do("LRANGE", version+":folded", 0, -1))
 }
 
 func (r *RedisCaching) ReadNode(key string) (*Node, error) {

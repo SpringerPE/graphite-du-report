@@ -1,11 +1,15 @@
 package reporter
 
 import (
-	"github.com/SpringerPE/graphite-du-report/caching"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"fmt"
 	_ "net/http/pprof"
 	"strings"
 	"sync"
+
+	"github.com/SpringerPE/graphite-du-report/caching"
+	"github.com/SpringerPE/graphite-du-report/logging"
+
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
 type Tree struct {
@@ -47,8 +51,16 @@ func (tree *Tree) SetNumBulkUpdates(num int) {
 	tree.BulkUpdates = num
 }
 
+func (tree *Tree) Cleanup(rootName string) error {
+	return tree.updater.Cleanup(rootName)
+}
+
 func (tree *Tree) IncrVersion() error {
 	return tree.updater.IncrVersion()
+}
+
+func (tree *Tree) UpdateReaderVersion() error {
+	return tree.updater.UpdateReaderVersion()
 }
 
 func (tree *Tree) AddNode(key string, node *caching.Node) error {
@@ -69,22 +81,65 @@ func (tree *Tree) GetNode(key string) (*caching.Node, error) {
 	return node, err
 }
 
+func (tree *Tree) Persist() error {
+	// Get the root node
+	root, err := tree.GetNode(tree.RootName)
+	if err != nil {
+		return fmt.Errorf("%s: %v", "cannot get the root node", err)
+	}
+	// Increase the version for the newly build tree
+	err = tree.IncrVersion()
+	if err != nil {
+		return fmt.Errorf("%s: %v", "cannot incr version", err)
+	}
+	// Save the tree to the persistent datastore
+	// TODO: generate and handle errors here too
+	tree.persistTree(root)
+	//Update the reader version to the current version upon succeeding
+	err = tree.UpdateReaderVersion()
+	if err != nil {
+		return fmt.Errorf("%s: %v", "cannot incr version", err)
+	}
+	logging.LogStd(fmt.Sprintf("%s", "Tree initialisation finished"))
+
+	logging.LogStd(fmt.Sprintf("%s", "Cleaning up old versions..."))
+	tree.Cleanup(tree.RootName)
+	if err != nil {
+		return fmt.Errorf("%s: %v", "error while cleaning up old versions", err)
+	}
+	logging.LogStd(fmt.Sprintf("%s", "Cleaning up finished"))
+
+	return nil
+}
+
 //Calculates the disk usage in terms of number of files contained
-func (tree *Tree) UpdateSize(root *caching.Node) {
+func (tree *Tree) persistTree(root *caching.Node) {
 	updateOps := make(chan *caching.Node)
 
 	var wg sync.WaitGroup
 	for w := 1; w <= tree.UpdateRoutines; w++ {
 		wg.Add(1)
-		go tree.updateNode(updateOps, &wg)
+		go tree.persistNode(updateOps, &wg)
 	}
 
-	tree.updateSize(root, nil, updateOps)
+	tree.persist(root, nil, updateOps)
 	close(updateOps)
 	wg.Wait()
 }
 
-func (tree *Tree) updateNode(updateOps chan *caching.Node, wg *sync.WaitGroup) {
+//Calculates the disk usage in terms of number of files contained
+func (tree *Tree) persist(root *caching.Node, parent *caching.Node, updateOps chan *caching.Node) {
+	//if it is a leaf its size is already given
+	for _, child := range root.Children {
+		node, err := tree.GetNode(root.Name + "." + child)
+		if err != nil {
+		}
+		tree.persist(node, root, updateOps)
+	}
+	updateOps <- root
+}
+
+func (tree *Tree) persistNode(updateOps chan *caching.Node, wg *sync.WaitGroup) {
 	defer wg.Done()
 	nodes := []*caching.Node{}
 	for {
@@ -104,25 +159,13 @@ func (tree *Tree) updateNode(updateOps chan *caching.Node, wg *sync.WaitGroup) {
 	}
 }
 
-//Calculates the disk usage in terms of number of files contained
-func (tree *Tree) updateSize(root *caching.Node, parent *caching.Node, updateOps chan *caching.Node) {
-	//if it is a leaf its size is already given
-	for _, child := range root.Children {
-		node, err := tree.GetNode(root.Name + "." + child)
-		if err != nil {
-		}
-		tree.updateSize(node, root, updateOps)
-	}
-	updateOps <- root
-}
-
 /* Takes in input a protocol buffer object representing a details response
  * from graphite, and returns a structure representing the metrics tree.
  *
  * The generated tree will be rooted to a node named from the
  * tree.RootName user defined variable
  */
-func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) error {
+func (tree *Tree) ConstructTree(details *pb.MetricDetailsResponse) error {
 	alreadyVisited := []*caching.Node{}
 	root, err := tree.GetNode(tree.RootName)
 	if err != nil {
@@ -148,8 +191,10 @@ func ConstructTree(tree *Tree, details *pb.MetricDetailsResponse) error {
 			}
 
 			if currentIndex == leafIndex {
-				for _, node := range alreadyVisited {
-					node.Leaf = false
+				for index, node := range alreadyVisited {
+					if index != len(alreadyVisited)-1 {
+						node.Leaf = false
+					}
 					node.Size += data.Size_
 
 				}

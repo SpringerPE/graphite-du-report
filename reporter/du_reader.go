@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
+	"github.com/SpringerPE/graphite-du-report/logging"
 )
 
 type TreeReader struct {
@@ -24,7 +25,7 @@ func (tree *TreeReader) ReadNode(key string) (*caching.Node, error) {
 	return node, err
 }
 
-func (tree *TreeReader) ReadFlameMap() (map[string]int64, error) {
+func (tree *TreeReader) ReadFlameMap() ([]string, error) {
 	return tree.reader.ReadFlameMap()
 }
 
@@ -39,7 +40,7 @@ func (tree *TreeReader) Visit(root *caching.Node, doc *[]string) {
 	for _, child := range root.Children {
 		node, err := tree.ReadNode(root.Name + "." + child)
 		if err != nil {
-			fmt.Println(err)
+			logging.LogError("cannot read node", err)
 		}
 		tree.Visit(node, doc)
 	}

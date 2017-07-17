@@ -65,7 +65,7 @@ func (r *MemUpdater) UpdateNodes(nodes []*Node) error {
 }*/
 
 //TODO
-func (r *MemUpdater) ReadFlameMap() (map[string]int64, error) {
+func (r *MemUpdater) ReadFlameMap() ([]string, error) {
 	return nil, nil
 }
 

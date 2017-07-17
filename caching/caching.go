@@ -20,7 +20,7 @@ type TreeUpdater interface {
 	UpdateReaderVersion() error
 	UpdateNodes([]*Node) error
 	ReadNode(string) (*Node, error)
-	ReadFlameMap() (map[string]int64, error)
+	ReadFlameMap() ([]string, error)
 	Cleanup(string) error
 }
 

@@ -3,10 +3,11 @@ package reporter
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
+
+	"github.com/SpringerPE/graphite-du-report/logging"
 
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
@@ -56,7 +57,7 @@ func (fetcher *DataFetcher) FetchData(url string) (*pb.MetricDetailsResponse, er
 
 retry:
 	if tries > fetcher.Retries {
-		log.Println("Tries exceeded while trying to fetch data")
+		logging.LogError("Tries exceeded while trying to fetch data", errTimeout)
 		return nil, errTimeout
 	}
 	response, err = fetcher.Get(url)
@@ -64,7 +65,7 @@ retry:
 		defer response.Body.Close()
 	}
 	if err != nil {
-		log.Println("Error during communication with client")
+		logging.LogError("Error during communication with client", err)
 		tries++
 		time.Sleep(300 * time.Millisecond)
 		goto retry
@@ -72,8 +73,7 @@ retry:
 
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			log.Println(err)
-			log.Println("Error while reading client's response")
+			logging.LogError("Error while reading client's response", err)
 			tries++
 			time.Sleep(300 * time.Millisecond)
 			goto retry
@@ -81,8 +81,7 @@ retry:
 
 		err = metricsResponse.Unmarshal(body)
 		if err != nil || len(metricsResponse.Metrics) == 0 {
-			log.Println(err)
-			log.Println("Error while parsing client's response")
+			logging.LogError("Error while reading client's response", err)
 			tries++
 			time.Sleep(300 * time.Millisecond)
 			goto retry
@@ -102,8 +101,8 @@ func GetDetails(ips []string, cluster string, fetcher Fetcher) *pb.MetricDetails
 		url := "http://" + ip + "/metrics/details/?format=protobuf"
 		fetcheddata, err := fetcher.FetchData(url)
 		if err != nil {
-			log.Println("timeout during fetching details")
-			//return
+			logging.LogError("timeout during fetching details", err)
+			//TODO: what to do here?
 		}
 		if response == nil {
 			continue

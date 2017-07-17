@@ -40,7 +40,7 @@ var _ = Describe("Reporter", func() {
 				tree, _ := reporter.NewTree("root", builder, updater)
 
 				root, _ := tree.GetNode(tree.RootName)
-				reporter.ConstructTree(tree, response)
+				tree.ConstructTree(response)
 				Expect(root.Children).To(HaveLen(2))
 				for _, key := range []string{"team1", "team2"} {
 					Expect(root.Children).To(ContainElement(key))
@@ -67,9 +67,8 @@ var _ = Describe("Reporter", func() {
 				builder := caching.NewMemBuilder()
 				updater := caching.NewMemUpdater()
 				tree, _ := reporter.NewTree("root", builder, updater)
-				root, _ := tree.GetNode(tree.RootName)
-				reporter.ConstructTree(tree, response)
-				tree.UpdateSize(root)
+				tree.ConstructTree(response)
+				tree.Persist()
 
 				team1, _ := tree.GetNodeFromRoot("team1")
 				team2, _ := tree.GetNodeFromRoot("team2")
@@ -91,11 +90,10 @@ var _ = Describe("Reporter", func() {
 				tree, _ := reporter.NewTree("root", builder, updater)
 				reader, _ := reporter.NewTreeReader("root", updater)
 
-				root, _ := tree.GetNode(tree.RootName)
-				reporter.ConstructTree(tree, response)
-				tree.UpdateSize(root)
-				flame := []string{}
-				reader.Visit(root, &flame)
+				tree.ConstructTree(response)
+				tree.Persist()
+				//flame := []string{}
+				reader.ReadFlameMap()
 			})
 		})
 	})

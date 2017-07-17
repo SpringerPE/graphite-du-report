@@ -1,16 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/pprof"
-	"strings"
 	"time"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/config"
-	"github.com/SpringerPE/graphite-du-report/logging"
+	"github.com/SpringerPE/graphite-du-report/controller"
 	"github.com/SpringerPE/graphite-du-report/reporter"
 
 	"github.com/gorilla/mux"
@@ -30,101 +28,6 @@ var (
 	numBulkUpdates    = kingpin.Flag("num-bulk-updates", "number of concurrent bulk node updates").Default("100").OverrideDefaultFromEnvar("BULK_UPDATES").Int()
 	numBulkScans      = kingpin.Flag("num-bulk-scans", "number of concurrent bulk node scans").Default("100").OverrideDefaultFromEnvar("BULK_SCANS").Int()
 )
-
-func errorResponse(w http.ResponseWriter, msg string, err error) {
-	logging.LogError(msg, err)
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintf(w, msg)
-}
-
-func getNodeSize(w http.ResponseWriter, r *http.Request, tree *reporter.TreeReader) {
-	path := r.URL.Query().Get("path")
-	size, err := tree.GetNodeSize(path)
-	if err != nil {
-		errorResponse(w, "failed getting the node size", err)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, fmt.Sprintf("%d", size))
-}
-
-func flame(w http.ResponseWriter, r *http.Request, tree *reporter.TreeReader, config *config.WorkerConfig) {
-	flame, err := tree.ReadFlameMap()
-	if err != nil {
-		errorResponse(w, "failed reading the root node", err)
-		return
-	}
-	fmt.Println("Tree visit completed")
-	w.WriteHeader(http.StatusOK)
-	for k, v := range flame {
-		fmt.Fprintf(w, fmt.Sprintf("%s %d\n", strings.Replace(k, ".", ";", -1), v))
-	}
-}
-
-func populateDetails(w http.ResponseWriter, r *http.Request, config *config.UpdaterConfig) {
-	logging.LogStd(fmt.Sprintf("%s", "Tree initialisation started"))
-	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
-	response := reporter.GetDetails(config.Servers, "", fetcher)
-	builder := caching.NewMemBuilder()
-	updater := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
-
-	updater.SetNumBulkScans(config.BulkScans)
-
-	tree, err := reporter.NewTree(config.RootName, builder, updater)
-	if err != nil {
-		errorResponse(w, "cannot instanciate new reporter tree", err)
-		return
-	}
-	tree.SetNumUpdateRoutines(config.UpdateRoutines)
-	tree.SetNumBulkUpdates(config.BulkUpdates)
-
-	logging.LogStd(fmt.Sprintf("%s", "Tree building started"))
-	reporter.ConstructTree(tree, response)
-	logging.LogStd(fmt.Sprintf("%s", "Tree building finished"))
-	root, err := tree.GetNode(config.RootName)
-	if err != nil {
-		errorResponse(w, "cannot get the root node", err)
-		return
-	}
-	err = updater.IncrVersion()
-	if err != nil {
-		errorResponse(w, "cannot incr version", err)
-		return
-	}
-	tree.UpdateSize(root)
-	logging.LogStd(fmt.Sprintf("%s", "Tree initialisation finished"))
-	err = updater.UpdateReaderVersion()
-	if err != nil {
-		errorResponse(w, "couldn't update current version to match next", err)
-		return
-	}
-
-	logging.LogStd(fmt.Sprintf("%s", "Cleaning up old versions..."))
-	updater.Cleanup(config.RootName)
-	logging.LogStd(fmt.Sprintf("%s", "Cleaning up finished"))
-	if err != nil {
-		errorResponse(w, "error while cleaning up old versions", err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "OK")
-	return
-}
-
-func cleanup(w http.ResponseWriter, r *http.Request, config *config.UpdaterConfig) {
-	logging.LogStd(fmt.Sprintf("%s", "Tree cleanup started"))
-	updater := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
-
-	err := updater.Cleanup(config.RootName)
-	if err != nil {
-		errorResponse(w, "failed cleaning up", err)
-		return
-	}
-	logging.LogStd(fmt.Sprintf("%s", "cleanup finished"))
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, fmt.Sprintf("%s", "OK"))
-}
 
 func attachProfiler(router *mux.Router) {
 	router.HandleFunc("/debug/pprof/", pprof.Index)
@@ -157,6 +60,7 @@ func runWorker() {
 
 	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
 	treeReader, _ := reporter.NewTreeReader(config.RootName, reader)
+	worker, _ := controller.NewWorker(treeReader, config)
 
 	r := mux.NewRouter()
 	if *profiling {
@@ -164,12 +68,12 @@ func runWorker() {
 	}
 
 	r.HandleFunc("/size", func(w http.ResponseWriter, r *http.Request) {
-		getNodeSize(w, r, treeReader)
+		worker.HandleNodeSize(w, r)
 	}).Methods("GET").Name("Size")
 
 	r.HandleFunc("/flame", func(w http.ResponseWriter, r *http.Request) {
-		flame(w, r, treeReader, config)
-	}).Methods("GET").Name("Visit")
+		worker.HandleFlame(w, r)
+	}).Methods("GET").Name("Flame")
 
 	srv := &http.Server{
 		Handler: r,
@@ -190,17 +94,26 @@ func runUpdater() {
 		BulkUpdates:    *numBulkUpdates,
 		BulkScans:      *numBulkScans,
 	}
+	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
+	builder := caching.NewMemBuilder()
+	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
+	reader.SetNumBulkScans(config.BulkScans)
+	tree, _ := reporter.NewTree(config.RootName, builder, reader)
+	tree.SetNumUpdateRoutines(config.UpdateRoutines)
+	tree.SetNumBulkUpdates(config.BulkUpdates)
+
+	up, _ := controller.NewUpdater(tree, fetcher, config)
 	r := mux.NewRouter()
 	if *profiling {
 		attachProfiler(r)
 	}
 
 	r.HandleFunc("/populate", func(w http.ResponseWriter, r *http.Request) {
-		populateDetails(w, r, config)
+		up.PopulateDetails(w, r)
 	}).Methods("POST").Name("Populate")
 
 	r.HandleFunc("/cleanup", func(w http.ResponseWriter, r *http.Request) {
-		cleanup(w, r, config)
+		up.Cleanup(w, r)
 	}).Methods("DELETE").Name("Cleanup")
 
 	srv := &http.Server{
