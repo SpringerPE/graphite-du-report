@@ -32,43 +32,96 @@ var _ = Describe("Reporter", func() {
 		}
 	})
 
-	Describe("Can construct a tree starting from a MetricDetails response", func() {
-		Context("If the response is well formed", func() {
-			It("Can construct the tree", func() {
-				builder := caching.NewMemBuilder()
-				updater := caching.NewMemUpdater()
-				tree, _ := reporter.NewTree("root", builder, updater)
+	Describe("Tree Builder", func() {
+
+		var (
+			builder                  caching.TreeBuilder
+			updater                  caching.TreeUpdater
+			tree                     *reporter.Tree
+			readerTree               *reporter.TreeReader
+			err, buildErr, readerErr error
+		)
+
+		BeforeEach(func() {
+
+		})
+
+		JustBeforeEach(func() {
+			builder = caching.NewMemBuilder()
+			updater = NewMockUpdater()
+			tree, err = reporter.NewTree("root", builder, updater)
+			readerTree, readerErr = reporter.NewTreeReader("root", updater)
+			buildErr = tree.ConstructTree(response)
+		})
+
+		Context("given a MetricsDetails response", func() {
+
+			It("should not error when creating the tree", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should not error when creating the tree reader", func() {
+				Expect(readerErr).NotTo(HaveOccurred())
+			})
+
+			It("should not error when building the tree", func() {
+				Expect(buildErr).NotTo(HaveOccurred())
+			})
+
+			It("should be able to construct the metrics tree", func() {
 
 				root, _ := tree.GetNode(tree.RootName)
-				tree.ConstructTree(response)
+
+				childrenNames := []string{"team1", "team2"}
+
+				//tree should have two children named team1 and team2
 				Expect(root.Children).To(HaveLen(2))
-				for _, key := range []string{"team1", "team2"} {
+				for _, key := range childrenNames {
 					Expect(root.Children).To(ContainElement(key))
 				}
 
-				for _, key := range []string{"stats"} {
-					child, err := tree.GetNodeFromRoot("team1." + key)
-
+				//tree should two nodes named stats
+				for _, key := range childrenNames {
+					child, err := tree.GetNodeFromRoot(key + ".stats")
 					Expect(err).To(BeNil())
 					Expect(child.Leaf).To(BeFalse())
-					Expect(child.Size).To(Equal(int64(1040384)))
 				}
-				for _, key := range []string{"metric1"} {
-					_, err := tree.GetNodeFromRoot("team1." + key)
+
+				//tree should not contain original leaves (metric files)
+				for _, key := range childrenNames {
+					_, err := tree.GetNodeFromRoot(key + ".metric1")
 					Expect(err).NotTo(BeNil())
 				}
-			})
-		})
-	})
 
-	Describe("Can update the nodes metadata in a tree during a visit", func() {
-		Context("Given the root of a tree", func() {
-			It("Can update the metadata", func() {
-				builder := caching.NewMemBuilder()
-				updater := caching.NewMemUpdater()
-				tree, _ := reporter.NewTree("root", builder, updater)
-				tree.ConstructTree(response)
-				tree.Persist()
+				//nodes 1 level up the leaves should be marked as leaves
+				for _, key := range childrenNames {
+					child, err := tree.GetNodeFromRoot(key + ".stats.gauges")
+					Expect(err).To(BeNil())
+					Expect(child.Leaf).To(BeTrue())
+				}
+			})
+
+			It("should persist the data via the TreeUpdater", func() {
+				persistErr := tree.Persist()
+				Expect(persistErr).To(BeNil())
+
+				names := []string{
+					"root",
+					"root.team1",
+					"root.team2",
+					"root.team1.stats",
+					"root.team2.stats",
+					"root.team1.stats.gauges",
+					"root.team2.stats.gauges",
+				}
+				for _, name := range names {
+					node, readErr := readerTree.ReadNode(name)
+					Expect(readErr).To(BeNil())
+					Expect(node.Name).To(Equal(name))
+				}
+			})
+
+			It("should populate the tree with the correct metadata", func() {
 
 				team1, _ := tree.GetNodeFromRoot("team1")
 				team2, _ := tree.GetNodeFromRoot("team2")
@@ -82,24 +135,7 @@ var _ = Describe("Reporter", func() {
 		})
 	})
 
-	Describe("Gets the list of the nodes for the flame graph", func() {
-		Context("Given the root of a tree", func() {
-			It("Can get the list", func() {
-				builder := caching.NewMemBuilder()
-				updater := caching.NewMemUpdater()
-				tree, _ := reporter.NewTree("root", builder, updater)
-				reader, _ := reporter.NewTreeReader("root", updater)
-
-				tree.ConstructTree(response)
-				tree.Persist()
-				//flame := []string{}
-				reader.ReadFlameMap()
-			})
-		})
-	})
-
-	Describe("Can get the details", func() {
-
+	Describe("Fetcher", func() {
 		var (
 			response1, response2, response3 *pb.MetricDetailsResponse
 		)
@@ -136,8 +172,8 @@ var _ = Describe("Reporter", func() {
 
 		})
 
-		Context("Given multiple ip addresses", func() {
-			It("return a valid response object", func() {
+		Context("given multiple ip addresses", func() {
+			It("should return a valid response object", func() {
 				fetcher := NewFakeDataFetcher()
 				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf"] = response1
 				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf"] = response2
@@ -153,7 +189,7 @@ var _ = Describe("Reporter", func() {
 
 			})
 
-			It("overwrites older metrics with most recents", func() {
+			It("should overwrite older metrics with most recents", func() {
 				fetcher := NewFakeDataFetcher()
 				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf"] = response1
 				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf"] = response3
