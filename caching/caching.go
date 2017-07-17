@@ -22,6 +22,8 @@ type TreeUpdater interface {
 	ReadNode(string) (*Node, error)
 	ReadFlameMap() ([]string, error)
 	Cleanup(string) error
+	WriteLock(string, string, uint64) (bool, error)
+	ReleaseLock(string, string) (bool, error)
 }
 
 type TreeBuilderUpdater interface {

@@ -1,16 +1,74 @@
 package caching
 
 import (
+	"errors"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/garyburd/redigo/redis"
 )
+
+var ErrLockMismatch = errors.New("key is locked with a different secret")
+
+const lockScript = `
+local v = redis.call("GET", KEYS[1])
+if v == false or v == ARGV[1]
+then
+	return redis.call("SET", KEYS[1], ARGV[1], "EX", ARGV[2]) and 1
+else
+	return 0
+end
+`
+
+const unlockScript = `
+local v = redis.call("GET",KEYS[1])
+if v == false then
+	return 1
+elseif v == ARGV[1] then
+	return redis.call("DEL",KEYS[1])
+else
+	return 0
+end
+`
 
 type RedisCaching struct {
 	Pool      *redis.Pool
 	BulkScans int
+}
+
+// writeLock attempts to grab a redis lock. The error returned is safe to ignore
+// if all you care about is whether or not the lock was acquired successfully.
+func (r *RedisCaching) WriteLock(name, secret string, ttl uint64) (bool, error) {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	script := redis.NewScript(1, lockScript)
+	resp, err := redis.Int(script.Do(conn, name, secret, int64(ttl)))
+	if err != nil {
+		return false, err
+	}
+	if resp == 0 {
+		return false, ErrLockMismatch
+	}
+	return true, nil
+}
+
+// writeLock releases the redis lock
+func (r *RedisCaching) ReleaseLock(name, secret string) (bool, error) {
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	script := redis.NewScript(1, unlockScript)
+	resp, err := redis.Int(script.Do(conn, name, secret))
+	if err != nil {
+		return false, err
+	}
+	if resp == 0 {
+		return false, ErrLockMismatch
+	}
+	return true, nil
 }
 
 func (r *RedisCaching) SetNumBulkScans(num int) {

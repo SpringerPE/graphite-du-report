@@ -43,6 +43,14 @@ func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeU
 	return tree, err
 }
 
+func (tree *Tree) WriteLock(name, secret string, ttl uint64) (bool, error) {
+	return tree.updater.WriteLock(name, secret, ttl)
+}
+
+func (tree *Tree) ReleaseLock(name, secret string) (bool, error) {
+	return tree.updater.ReleaseLock(name, secret)
+}
+
 func (tree *Tree) SetNumUpdateRoutines(num int) {
 	tree.UpdateRoutines = num
 }

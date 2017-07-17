@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/nu7hatch/gouuid"
+
 	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/helper"
 	"github.com/SpringerPE/graphite-du-report/logging"
@@ -26,10 +28,26 @@ func NewUpdater(tree *reporter.Tree, fetcher reporter.Fetcher, config *config.Up
 }
 
 func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		helper.ErrorResponse(w, "error while generating lock secret", err)
+		return
+	}
+	secret := uuid.String()
+	ok, err := up.tree.WriteLock("update_lock", secret, 120000)
+	if err != nil {
+		helper.ErrorResponse(w, "error while trying to get the update lock", err)
+		return
+	}
+	if !ok {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprintf(w, "Another update operation is currently running")
+	}
 	response := reporter.GetDetails(up.config.Servers, "", up.fetcher)
 	logging.LogStd(fmt.Sprintf("%s", "Tree building started"))
 	// Construct the tree from the metrics response first
-	err := up.tree.ConstructTree(response)
+	err = up.tree.ConstructTree(response)
 	if err != nil {
 		helper.ErrorResponse(w, "cannot construct the tree from the metrics response", err)
 		return
@@ -40,8 +58,11 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 		helper.ErrorResponse(w, "tree populate failed", err)
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	ok, err = up.tree.ReleaseLock("update_lock", secret)
+	if err != nil {
+		helper.ErrorResponse(w, "failed releasing the update lock", err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "OK")
 	return
