@@ -146,7 +146,7 @@ func (r *RedisCaching) IncrVersion() error {
 	defer conn.Close()
 
 	script := redis.NewScript(1, incrScript)
-	_, err := redis.Int(script.Do(conn, "version.next", 100))
+	_, err := script.Do(conn, "version.next", 100)
 	return err
 }
 
