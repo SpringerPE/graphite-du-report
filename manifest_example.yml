@@ -1,0 +1,29 @@
+---
+applications:
+- name: graphite_updater
+  memory: 4G
+  instances: 2
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git#v1.8.5
+  env:
+    GOVERSION: 1.8
+    GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
+    GRAPHITE_SERVERS: "10.0.0.1:8080,10.0.0.2:8080"
+    REDIS_ADDR: "redis-server:6379"
+    REDIS_PASSWD: "password"
+    UPDATE_ROUTINES: 2
+    BULK_UPDATES: 100
+    BULK_SCANS: 1000
+    ROLE: "updater"
+- name: graphite_worker
+  memory: 2G
+  instances: 2
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git#v1.8.5
+  env:
+    GOVERSION: 1.8
+    GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
+    REDIS_ADDR: "10.230.38.76:6379"
+    REDIS_PASSWD: "password"
+    UPDATE_ROUTINES: 10
+    BULK_UPDATES: 100
+    BULK_SCANS: 100
+    ROLE: "worker"
