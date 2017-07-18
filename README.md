@@ -1,6 +1,11 @@
 # Description
 A tool to monitor disk usage for a graphite stack.
 
+## Sources of inspiration
+
+- https://github.com/Civil/ch-flamegraphs
+- https://redis.io/topics/distlock
+
 ## Components
 The application is divided into two main components:
 - `updater` fetches and process the data coming from a graphite cluster, `/metrics/details` endpoint.
