@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/helper"
@@ -47,19 +48,12 @@ func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
 		helper.ErrorResponse(w, "could not generate flame graph: %v", err)
 		return
 	}
-	//TODO: set caching etag
-	/**
-		key := "somekey"
-		e := `"` + key + `"`
-		w.Header().Set("Etag", e)
-	    	if match := r.Header.Get("If-None-Match"); match != "" {
-	        		if strings.Contains(match, e) {
-	            	w.WriteHeader(http.StatusNotModified)
-	            	return
-	        		}
-	    	}
-	**/
-	w.Header().Set("Cache-Control", "max-age=300")
+
+	cacheSince := time.Now().Format(http.TimeFormat)
+	cacheUntil := time.Now().Add(300 * time.Second).Format(http.TimeFormat)
+	w.Header().Set("Last-Modified", cacheSince)
+	w.Header().Set("Expires", cacheUntil)
+	w.Header().Set("Cache-Control", "max-age=300, public")
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.WriteHeader(http.StatusOK)
 	w.Write(flameGraph)
