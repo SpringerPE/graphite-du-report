@@ -12,6 +12,16 @@ import (
 
 var ErrLockMismatch = errors.New("key is locked with a different secret")
 
+const incrScript = `
+local v = redis.call("GET", KEYS[1])
+if v == false
+then
+	return redis.call("SET", KEYS[1], 0)
+else
+	return redis.call("SET", KEYS[1], math.mod(v+1, ARGV[1]))
+end
+`
+
 const lockScript = `
 local v = redis.call("GET", KEYS[1])
 if v == false or v == ARGV[1]
@@ -134,8 +144,9 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 func (r *RedisCaching) IncrVersion() error {
 	conn := r.Pool.Get()
 	defer conn.Close()
-	//TODO: increment with module operation
-	_, err := conn.Do("INCR", "version.next")
+
+	script := redis.NewScript(1, incrScript)
+	_, err := redis.Int(script.Do(conn, "version.next", 100))
 	return err
 }
 
