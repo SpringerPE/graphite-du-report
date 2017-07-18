@@ -1,7 +1,7 @@
 # Description
 A tool to monitor disk usage for a graphite stack.
 
-##Components
+## Components
 The application is divided into two main components:
 - `updater` fetches and process the data coming from a graphite cluster, `/metrics/details` endpoint.
 - `worker` offers api endpoints accessible to clients
@@ -27,11 +27,7 @@ The `worker` exposes:
 The current implementation makes use of a single Redis instance as a data/caching backend
 
 ```
-+--------------------+                       +-------------------+                      +---------------+
-|                                       
-|  Updater           |  +--------->       |  Redis            |  + <----------    |  Worker       |
-|              
-+--------------------+                       +-------------------+                      +---------------+
+Updater  --------->    Redis  <----------    Worker
 ```
 
 ## Configuration
@@ -65,7 +61,7 @@ A usage example for the two processes:
 
 They have been generated using the [dep](https://github.com/golang/dep) tool.
 
-##Run the tests
+## Run the tests
 First install `ginkgo` and `gomega`:
 
 ```
