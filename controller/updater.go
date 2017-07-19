@@ -11,16 +11,14 @@ import (
 )
 
 type Updater struct {
-	tree    *reporter.Tree
-	fetcher reporter.Fetcher
-	config  *config.UpdaterConfig
+	tree   *reporter.Tree
+	config *config.UpdaterConfig
 }
 
-func NewUpdater(tree *reporter.Tree, fetcher reporter.Fetcher, config *config.UpdaterConfig) (*Updater, error) {
+func NewUpdater(tree *reporter.Tree, config *config.UpdaterConfig) (*Updater, error) {
 	up := &Updater{
-		tree:    tree,
-		fetcher: fetcher,
-		config:  config,
+		tree:   tree,
+		config: config,
 	}
 	return up, nil
 }
@@ -48,7 +46,7 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response := reporter.GetDetails(up.config.Servers, "", up.fetcher)
+	response := reporter.GetDetails(up.config.Servers, "")
 	logging.LogStd(fmt.Sprintf("%s", "Tree building started"))
 	// Construct the tree from the metrics response first
 	err = up.tree.ConstructTree(response)

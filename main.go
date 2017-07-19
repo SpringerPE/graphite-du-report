@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
-	"time"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/config"
@@ -94,7 +93,6 @@ func runUpdater() {
 		BulkUpdates:    *numBulkUpdates,
 		BulkScans:      *numBulkScans,
 	}
-	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
 	builder := caching.NewMemBuilder()
 	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
 	reader.SetNumBulkScans(config.BulkScans)
@@ -102,7 +100,7 @@ func runUpdater() {
 	tree.SetNumUpdateRoutines(config.UpdateRoutines)
 	tree.SetNumBulkUpdates(config.BulkUpdates)
 
-	up, _ := controller.NewUpdater(tree, fetcher, config)
+	up, _ := controller.NewUpdater(tree, config)
 	r := mux.NewRouter()
 	if *profiling {
 		attachProfiler(r)
