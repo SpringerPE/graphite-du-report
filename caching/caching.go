@@ -11,6 +11,7 @@ type TreeBuilder interface {
 	GetNode(string) (*Node, error)
 	AddNode(*Node) error
 	AddChild(*Node, string) error
+	Clear()
 }
 
 type TreeUpdater interface {
@@ -24,6 +25,7 @@ type TreeUpdater interface {
 	Cleanup(string) error
 	WriteLock(string, string, uint64) (bool, error)
 	ReleaseLock(string, string) (bool, error)
+	Close() error
 }
 
 type TreeBuilderUpdater interface {

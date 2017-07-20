@@ -1,9 +1,7 @@
 package reporter
 
 import (
-	//"fmt"
 	_ "net/http/pprof"
-	//"strings"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
 	//"github.com/SpringerPE/graphite-du-report/logging"

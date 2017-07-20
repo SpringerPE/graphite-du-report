@@ -14,6 +14,12 @@ func NewMemBuilder() TreeBuilder {
 	}
 }
 
+func (r *MemBuilder) Clear() {
+	for k := range r.nodes {
+		delete(r.nodes, k)
+	}
+}
+
 func (r *MemBuilder) AddNode(node *Node) error {
 	r.nodes[node.Name] = node
 	return nil
