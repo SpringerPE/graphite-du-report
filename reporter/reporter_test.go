@@ -175,8 +175,8 @@ var _ = Describe("Reporter", func() {
 		Context("given multiple ip addresses", func() {
 			It("should return a valid response object", func() {
 				fetcher := NewFakeDataFetcher()
-				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf"] = response1
-				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf"] = response2
+				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf3"] = response1
+				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf3"] = response2
 
 				response := reporter.GetDetails([]string{"127.0.0.1:8080", "127.0.0.2:8080"}, "", fetcher)
 				metricsList := []string{
@@ -191,8 +191,8 @@ var _ = Describe("Reporter", func() {
 
 			It("should overwrite older metrics with most recents", func() {
 				fetcher := NewFakeDataFetcher()
-				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf"] = response1
-				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf"] = response3
+				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf3"] = response1
+				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf3"] = response3
 
 				response := reporter.GetDetails([]string{"127.0.0.1:8080", "127.0.0.2:8080"}, "", fetcher)
 				Expect(response.Metrics).To(HaveLen(3))

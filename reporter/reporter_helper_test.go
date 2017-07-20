@@ -26,23 +26,40 @@ func (fetcher *FakeDataFetcher) FetchData(url string) (*pb.MetricDetailsResponse
 }
 
 type MockUpdater struct {
-	nodes       map[string]*caching.Node
-	flame       []string
-	version     int
-	versionNext int
-	mutex       *sync.RWMutex
+	nodes         map[string]*caching.Node
+	flame         []string
+	version       int
+	versionNext   int
+	mutex         *sync.RWMutex
+	updateMutexes map[string]*sync.RWMutex
 }
 
 func NewMockUpdater() caching.TreeUpdater {
 	return &MockUpdater{
-		nodes:       make(map[string]*caching.Node),
-		version:     0,
-		versionNext: 0,
-		mutex:       &sync.RWMutex{},
+		nodes:         make(map[string]*caching.Node),
+		version:       0,
+		versionNext:   0,
+		mutex:         &sync.RWMutex{},
+		updateMutexes: make(map[string]*sync.RWMutex),
 	}
 }
 
 func (r *MockUpdater) Cleanup(name string) error {
+	return nil
+}
+
+func (r *MockUpdater) WriteLock(name, secret string, ttl uint64) (bool, error) {
+	r.updateMutexes[name] = &sync.RWMutex{}
+	r.updateMutexes[name].Lock()
+	return true, nil
+}
+
+func (r *MockUpdater) ReleaseLock(name, secret string) (bool, error) {
+	r.updateMutexes[name].Unlock()
+	return true, nil
+}
+
+func (r *MockUpdater) Close() error {
 	return nil
 }
 

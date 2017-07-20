@@ -43,8 +43,13 @@ else
 end
 `
 
+type Pool interface {
+	Get() redis.Conn
+	Close() error
+}
+
 type RedisCaching struct {
-	Pool      *redis.Pool
+	Pool      Pool
 	BulkScans int
 }
 
@@ -98,8 +103,10 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
-	rxp, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, rootName))
-	rxp_folded, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, "folded"))
+	isGeneratedKey, err := regexp.Compile(fmt.Sprintf("(?P<Version>[0-9]+):(%s|folded)", rootName))
+	if err != nil {
+		return err
+	}
 
 	var (
 		cursor int64
@@ -118,17 +125,15 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 		}
 
 		conn.Send("MULTI")
+		//scan all the generated keys and delete those with an old version number
 		for _, x := range items {
-			if rxp.MatchString(x) {
-				continue
+			result := isGeneratedKey.FindStringSubmatch(x)
+			if len(result) == 3 {
+				if result[1] != version {
+					conn.Send("DEL", x)
+				}
 			}
-			if rxp_folded.MatchString(x) {
-				continue
-			}
-			if strings.HasPrefix(x, "version") {
-				continue
-			}
-			conn.Send("DEL", x)
+
 		}
 		_, err = conn.Do("EXEC")
 		if err != nil {
@@ -277,7 +282,7 @@ func NewRedisCaching(address string, passwd string) *RedisCaching {
 	return cacher
 }
 
-func newPool(addr string, passwd string) *redis.Pool {
+func newPool(addr string, passwd string) Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
 		Wait:        true,

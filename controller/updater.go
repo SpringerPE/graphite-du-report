@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/config"
@@ -40,6 +41,7 @@ func NewUpdater(config *config.UpdaterConfig) *Updater {
 func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 	config := up.config
 	tree := up.createBuilderTree()
+	fetcher := reporter.NewDataFetcher(120*time.Second, 3)
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	//generate a secret for the update lock
@@ -63,7 +65,7 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response := reporter.GetDetails(config.Servers, "")
+	response := reporter.GetDetails(config.Servers, "", fetcher)
 	logging.LogStd(fmt.Sprintf("%s", "Tree building started"))
 	// Construct the tree from the metrics response first
 	err = tree.ConstructTree(response)
