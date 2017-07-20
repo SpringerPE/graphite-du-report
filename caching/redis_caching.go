@@ -48,6 +48,10 @@ type RedisCaching struct {
 	BulkScans int
 }
 
+func (r *RedisCaching) Close() error {
+	return r.Pool.Close()
+}
+
 // writeLock attempts to grab a redis lock. The error returned is safe to ignore
 // if all you care about is whether or not the lock was acquired successfully.
 func (r *RedisCaching) WriteLock(name, secret string, ttl uint64) (bool, error) {
@@ -86,19 +90,16 @@ func (r *RedisCaching) SetNumBulkScans(num int) {
 }
 
 func (r *RedisCaching) Cleanup(rootName string) error {
-	conn := r.Pool.Get()
-	defer conn.Close()
-
 	version, err := r.Version()
 	if err != nil {
 		return err
 	}
+
+	conn := r.Pool.Get()
+	defer conn.Close()
+
 	rxp, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, rootName))
 	rxp_folded, _ := regexp.Compile(fmt.Sprintf("%s:%s*", version, "folded"))
-
-	if err != nil {
-		return err
-	}
 
 	var (
 		cursor int64
@@ -224,13 +225,13 @@ func (r *RedisCaching) AddChild(node *Node, child string) error {
 }
 
 func (r *RedisCaching) ReadFlameMap() ([]string, error) {
-	conn := r.Pool.Get()
-	defer conn.Close()
-
 	version, err := r.Version()
 	if err != nil {
 		return nil, err
 	}
+
+	conn := r.Pool.Get()
+	defer conn.Close()
 
 	return redis.Strings(conn.Do("LRANGE", version+":folded", 0, -1))
 }
