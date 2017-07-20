@@ -4,26 +4,43 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/helper"
 	"github.com/SpringerPE/graphite-du-report/logging"
 	"github.com/SpringerPE/graphite-du-report/reporter"
 )
 
+//TODO: make this a proper factory class
+func (up *Updater) createBuilderTree() *reporter.Tree {
+	config := up.config
+
+	builder := caching.NewMemBuilder()
+
+	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
+	reader.SetNumBulkScans(config.BulkScans)
+
+	tree, _ := reporter.NewTree(config.RootName, builder, reader)
+	tree.SetNumUpdateRoutines(config.UpdateRoutines)
+	tree.SetNumBulkUpdates(config.BulkUpdates)
+
+	return tree
+}
+
 type Updater struct {
-	tree   *reporter.Tree
 	config *config.UpdaterConfig
 }
 
-func NewUpdater(tree *reporter.Tree, config *config.UpdaterConfig) (*Updater, error) {
-	up := &Updater{
-		tree:   tree,
+func NewUpdater(config *config.UpdaterConfig) *Updater {
+	return &Updater{
 		config: config,
 	}
-	return up, nil
 }
 
 func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
+	config := up.config
+	tree := up.createBuilderTree()
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	//generate a secret for the update lock
 	lockName := "update_lock"
@@ -33,29 +50,29 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// try to acquire the lock
-	ok, err := up.tree.WriteLock(lockName, secret, 120)
+	ok, err := tree.WriteLock(lockName, secret, 120)
 	if !ok {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprintf(w, "Another update operation is currently running")
 		return
 	}
 	defer func() {
-		ok, err = up.tree.ReleaseLock(lockName, secret)
+		ok, err = tree.ReleaseLock(lockName, secret)
 		if !ok {
 			logging.LogError("failed releasing the update lock", err)
 		}
 	}()
 
-	response := reporter.GetDetails(up.config.Servers, "")
+	response := reporter.GetDetails(config.Servers, "")
 	logging.LogStd(fmt.Sprintf("%s", "Tree building started"))
 	// Construct the tree from the metrics response first
-	err = up.tree.ConstructTree(response)
+	err = tree.ConstructTree(response)
 	if err != nil {
 		helper.ErrorResponse(w, "cannot construct the tree from the metrics response", err)
 		return
 	}
 	logging.LogStd(fmt.Sprintf("%s", "Tree building finished"))
-	err = up.tree.Persist()
+	err = tree.Persist()
 	if err != nil {
 		helper.ErrorResponse(w, "tree populate failed", err)
 		return
@@ -66,9 +83,10 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 func (up *Updater) Cleanup(w http.ResponseWriter, r *http.Request) {
-	logging.LogStd(fmt.Sprintf("%s", "Tree cleanup started"))
+	config := up.config
+	tree := up.createBuilderTree()
 
-	err := up.tree.Cleanup(up.config.RootName)
+	err := tree.Cleanup(config.RootName)
 	if err != nil {
 		helper.ErrorResponse(w, "failed cleaning up", err)
 		return

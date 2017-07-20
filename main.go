@@ -1,14 +1,13 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/controller"
-	"github.com/SpringerPE/graphite-du-report/reporter"
+	"github.com/SpringerPE/graphite-du-report/logging"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -57,28 +56,21 @@ func runWorker() {
 		RedisPasswd: *redisPasswd,
 	}
 
-	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
-	treeReader, _ := reporter.NewTreeReader(config.RootName, reader)
-	worker, _ := controller.NewWorker(treeReader, config)
+	worker, _ := controller.NewWorker(config)
 
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 	if *profiling {
-		attachProfiler(r)
+		attachProfiler(router)
 	}
 
-	r.HandleFunc("/size", func(w http.ResponseWriter, r *http.Request) {
-		worker.HandleNodeSize(w, r)
-	}).Methods("GET").Name("Size")
-
-	r.HandleFunc("/flame", func(w http.ResponseWriter, r *http.Request) {
-		worker.HandleFlame(w, r)
-	}).Methods("GET").Name("Flame")
+	router.HandleFunc("/size", worker.HandleNodeSize).Methods("GET").Name("Size")
+	router.HandleFunc("/flame", worker.HandleFlame).Methods("GET").Name("Flame")
 
 	srv := &http.Server{
-		Handler: r,
+		Handler: router,
 		Addr:    config.BindAddress + ":" + config.BindPort,
 	}
-	log.Println(srv.ListenAndServe())
+	logging.LogStd(fmt.Sprintf("%s", srv.ListenAndServe()))
 }
 
 func runUpdater() {
@@ -93,30 +85,20 @@ func runUpdater() {
 		BulkUpdates:    *numBulkUpdates,
 		BulkScans:      *numBulkScans,
 	}
-	builder := caching.NewMemBuilder()
-	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
-	reader.SetNumBulkScans(config.BulkScans)
-	tree, _ := reporter.NewTree(config.RootName, builder, reader)
-	tree.SetNumUpdateRoutines(config.UpdateRoutines)
-	tree.SetNumBulkUpdates(config.BulkUpdates)
 
-	up, _ := controller.NewUpdater(tree, config)
-	r := mux.NewRouter()
+	updater := controller.NewUpdater(config)
+
+	router := mux.NewRouter()
 	if *profiling {
-		attachProfiler(r)
+		attachProfiler(router)
 	}
 
-	r.HandleFunc("/populate", func(w http.ResponseWriter, r *http.Request) {
-		up.PopulateDetails(w, r)
-	}).Methods("POST").Name("Populate")
-
-	r.HandleFunc("/cleanup", func(w http.ResponseWriter, r *http.Request) {
-		up.Cleanup(w, r)
-	}).Methods("DELETE").Name("Cleanup")
+	router.HandleFunc("/populate", updater.PopulateDetails).Methods("POST").Name("Populate")
+	router.HandleFunc("/cleanup", updater.Cleanup).Methods("DELETE").Name("Cleanup")
 
 	srv := &http.Server{
-		Handler: r,
+		Handler: router,
 		Addr:    config.BindAddress + ":" + config.BindPort,
 	}
-	log.Println(srv.ListenAndServe())
+	logging.LogStd(fmt.Sprintf("%s", srv.ListenAndServe()))
 }

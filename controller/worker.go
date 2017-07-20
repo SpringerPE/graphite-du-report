@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SpringerPE/graphite-du-report/caching"
 	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/helper"
 	"github.com/SpringerPE/graphite-du-report/reporter"
@@ -14,18 +15,29 @@ import (
 )
 
 type Worker struct {
-	reader *reporter.TreeReader
 	config *config.WorkerConfig
 }
 
-func NewWorker(reader *reporter.TreeReader, config *config.WorkerConfig) (*Worker, error) {
-	worker := &Worker{reader: reader, config: config}
+//TODO: make this a proper factory class
+func (worker *Worker) createTreeReader() *reporter.TreeReader {
+	config := worker.config
+
+	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
+	treeReader, _ := reporter.NewTreeReader(config.RootName, reader)
+
+	return treeReader
+}
+
+func NewWorker(config *config.WorkerConfig) (*Worker, error) {
+	worker := &Worker{config: config}
 	return worker, nil
 }
 
 func (worker *Worker) HandleNodeSize(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
-	size, err := worker.reader.GetNodeSize(path)
+	reader := worker.createTreeReader()
+
+	size, err := reader.GetNodeSize(path)
 	if err != nil {
 		helper.ErrorResponse(w, "failed getting the node size", err)
 		return
@@ -36,13 +48,14 @@ func (worker *Worker) HandleNodeSize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
-	flame, err := worker.reader.ReadFlameMap()
+	reader := worker.createTreeReader()
+
+	flame, err := reader.ReadFlameMap()
 	if err != nil {
 		helper.ErrorResponse(w, "failed reading the root node", err)
 		return
 	}
 	flameInput := strings.Join(flame, "\n")
-	//fmt.Println(flameInput)
 	flameGraph, err := renderer.GenerateFlameGraph([]byte(flameInput), "--hash", "--countname=bytes")
 	if err != nil {
 		helper.ErrorResponse(w, "could not generate flame graph: %v", err)
