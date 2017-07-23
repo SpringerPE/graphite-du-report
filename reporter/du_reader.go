@@ -4,7 +4,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
-	//"github.com/SpringerPE/graphite-du-report/logging"
 )
 
 type TreeReader struct {
