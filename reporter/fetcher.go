@@ -14,11 +14,6 @@ import (
 
 var errTimeout = fmt.Errorf("Max tries exceeded")
 
-type metricDetailsFlat struct {
-	*pb.MetricDetails
-	Name string
-}
-
 type Fetcher interface {
 	FetchData(string) (*pb.MetricDetailsResponse, error)
 }
