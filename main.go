@@ -36,6 +36,10 @@ func attachProfiler(router *mux.Router) {
 	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 }
 
+func attachStatic(router *mux.Router) {
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+}
+
 func main() {
 	kingpin.Parse()
 
@@ -62,6 +66,8 @@ func runWorker() {
 	if *profiling {
 		attachProfiler(router)
 	}
+
+	attachStatic(router)
 
 	router.HandleFunc("/size", worker.HandleNodeSize).Methods("GET").Name("Size")
 	router.HandleFunc("/flame", worker.HandleFlame).Methods("GET").Name("Flame")

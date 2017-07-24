@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"encoding/base64"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strings"
 	"time"
@@ -13,6 +15,8 @@ import (
 
 	"github.com/uber/go-torch/renderer"
 )
+
+var templates = template.Must(template.ParseGlob("static/templates/*"))
 
 type Worker struct {
 	config *config.WorkerConfig
@@ -55,8 +59,10 @@ func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
 		helper.ErrorResponse(w, "failed reading the root node", err)
 		return
 	}
+
 	flameInput := strings.Join(flame, "\n")
-	flameGraph, err := renderer.GenerateFlameGraph([]byte(flameInput), "--hash", "--countname=bytes")
+	flameGraph, err := renderer.GenerateFlameGraph([]byte(flameInput),
+		"--hash", "--countname=bytes")
 	if err != nil {
 		helper.ErrorResponse(w, "could not generate flame graph: %v", err)
 		return
@@ -64,10 +70,15 @@ func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
 
 	cacheSince := time.Now().Format(http.TimeFormat)
 	cacheUntil := time.Now().Add(300 * time.Second).Format(http.TimeFormat)
+
+	sEnc := base64.StdEncoding.EncodeToString(flameGraph)
+	params := make(map[string]interface{})
+	params["svg"] = sEnc
+
 	w.Header().Set("Last-Modified", cacheSince)
 	w.Header().Set("Expires", cacheUntil)
 	w.Header().Set("Cache-Control", "max-age=300, public")
-	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write(flameGraph)
+	err = templates.ExecuteTemplate(w, "flame.html", params)
 }
