@@ -66,7 +66,11 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response := reporter.GetDetails(config.Servers, "", fetcher)
+	response, err := reporter.GetDetails(config.Servers, "", fetcher)
+	if err != nil {
+		helper.ErrorResponse(w, "error while contacting carbonserver", err)
+		return
+	}
 	logging.LogStd(fmt.Sprintf("%s", "Tree building started"))
 	// Construct the tree from the metrics response first
 	err = tree.ConstructTree(response)

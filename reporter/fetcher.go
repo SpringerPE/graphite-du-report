@@ -75,7 +75,7 @@ retry:
 	return &metricsResponse, nil
 }
 
-func GetDetails(ips []string, cluster string, fetcher Fetcher) *pb.MetricDetailsResponse {
+func GetDetails(ips []string, cluster string, fetcher Fetcher) (*pb.MetricDetailsResponse, error) {
 	response := &pb.MetricDetailsResponse{
 		Metrics: make(map[string]*pb.MetricDetails),
 	}
@@ -85,9 +85,7 @@ func GetDetails(ips []string, cluster string, fetcher Fetcher) *pb.MetricDetails
 		fetcheddata, err := fetcher.FetchData(url)
 		if err != nil {
 			logging.LogError("timeout during fetching details", err)
-			//TODO: what to do here?
-			//we should generate an error and return otherwise it is
-			//going to panic
+			return response, err
 		}
 		if response == nil {
 			continue
@@ -105,5 +103,5 @@ func GetDetails(ips []string, cluster string, fetcher Fetcher) *pb.MetricDetails
 			}
 		}
 	}
-	return response
+	return response, nil
 }

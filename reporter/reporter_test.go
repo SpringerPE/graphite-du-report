@@ -182,7 +182,7 @@ var _ = Describe("Reporter", func() {
 				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf3"] = response1
 				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf3"] = response2
 
-				response := reporter.GetDetails([]string{"127.0.0.1:8080", "127.0.0.2:8080"}, "", fetcher)
+				response, _ := reporter.GetDetails([]string{"127.0.0.1:8080", "127.0.0.2:8080"}, "", fetcher)
 				metricsList := []string{
 					"team1.metric1", "team1.stats.metric1", "team1.stats.gauges.metric1",
 					"team2.metric1", "team2.metric2", "team2.stats.metric1", "team2.stats.gauges.metric1",
@@ -198,7 +198,7 @@ var _ = Describe("Reporter", func() {
 				fetcher.Responses["http://127.0.0.1:8080/metrics/details/?format=protobuf3"] = response1
 				fetcher.Responses["http://127.0.0.2:8080/metrics/details/?format=protobuf3"] = response3
 
-				response := reporter.GetDetails([]string{"127.0.0.1:8080", "127.0.0.2:8080"}, "", fetcher)
+				response, _ := reporter.GetDetails([]string{"127.0.0.1:8080", "127.0.0.2:8080"}, "", fetcher)
 				Expect(response.Metrics).To(HaveLen(3))
 				Expect(response.Metrics["team1.metric1"].ModTime).To(Equal(int64(1497262566)))
 				Expect(response.Metrics["team1.stats.metric1"].Size_).To(Equal(int64(520193)))
