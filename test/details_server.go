@@ -2,13 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/ecooper/combinatoric"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/ecooper/combinatoric"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	"math/rand"
+	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+var (
+	metrics = kingpin.Flag("metrics", "number of metrics in the generated tree").Default("1000").OverrideDefaultFromEnvar("DETAILS_SERVER_METRICS").Int()
+	depth   = kingpin.Flag("depth", "the depth of the leaves in the generated trees").Default("10").OverrideDefaultFromEnvar("DETAILS_SERVER_DEPTH").Int()
+	addr    = kingpin.Flag("addr", "bind address for the mock carbonserver instance").Default("127.0.0.1:8080").OverrideDefaultFromEnvar("DETAILS_SERVER_ADDR").String()
 )
 
 func random(min, max int) int {
@@ -73,16 +80,20 @@ func detailsHandler(wr http.ResponseWriter, req *http.Request, response *pb.Metr
 }
 
 func main() {
+
+	kingpin.Parse()
+
 	rand.Seed(time.Now().Unix())
 
 	elements := []interface{}{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
 		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 
 	// Create a new CombinationIterator of 2 elements using src
-	iter, _ := combinatoric.Combinations(elements, 10)
+	iter, _ := combinatoric.Combinations(elements, *depth)
 
 	// Print the length of the iterator
-	fmt.Printf("Expecting %d combinations:\n", iter.Len())
+	fmt.Printf("Maximum number of combinations: %d\n", iter.Len())
+	fmt.Printf("Generating tree of depth %d with %d leaves\n", *depth, *metrics)
 
 	details := &pb.MetricDetailsResponse{
 		Metrics:    make(map[string]*pb.MetricDetails),
@@ -90,10 +101,10 @@ func main() {
 		TotalSpace: uint64(1),
 	}
 
-	remaining := 2000000
+	remaining := *metrics
 
 	for remaining > 0 {
-		n := generateMetric(iter, details, 10, remaining)
+		n := generateMetric(iter, details, *depth, remaining)
 		remaining -= n
 	}
 
@@ -101,5 +112,5 @@ func main() {
 		detailsHandler(w, r, details)
 	})
 
-	http.ListenAndServe("127.0.0.1:8080", nil)
+	http.ListenAndServe(*addr, nil)
 }

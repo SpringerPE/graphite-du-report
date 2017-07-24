@@ -37,6 +37,8 @@ var _ = Describe("Reporter", func() {
 		var (
 			builder                  caching.TreeBuilder
 			updater                  caching.TreeUpdater
+			reader                   caching.TreeReader
+			locker                   caching.Locker
 			tree                     *reporter.Tree
 			readerTree               *reporter.TreeReader
 			err, buildErr, readerErr error
@@ -49,8 +51,10 @@ var _ = Describe("Reporter", func() {
 		JustBeforeEach(func() {
 			builder = caching.NewMemBuilder()
 			updater = NewMockUpdater()
-			tree, err = reporter.NewTree("root", builder, updater)
-			readerTree, readerErr = reporter.NewTreeReader("root", updater)
+			reader = updater.(caching.TreeReader)
+			locker = NewMockLocker()
+			tree, err = reporter.NewTree("root", builder, updater, locker)
+			readerTree, readerErr = reporter.NewTreeReader("root", reader)
 			buildErr = tree.ConstructTree(response)
 		})
 

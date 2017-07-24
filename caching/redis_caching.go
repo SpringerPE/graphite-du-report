@@ -176,7 +176,7 @@ func (r *RedisCaching) Version() (string, error) {
 	return version, err
 }
 
-func (r *RedisCaching) VersionNext() (string, error) {
+func (r *RedisCaching) versionNext() (string, error) {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
@@ -186,7 +186,7 @@ func (r *RedisCaching) VersionNext() (string, error) {
 
 func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 	var nodeEntry string
-	version, err := r.VersionNext()
+	version, err := r.versionNext()
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 }
 
 func (r *RedisCaching) AddChild(node *Node, child string) error {
-	version, err := r.VersionNext()
+	version, err := r.versionNext()
 	if err != nil {
 		return err
 	}

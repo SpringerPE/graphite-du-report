@@ -19,10 +19,12 @@ type Tree struct {
 	nodes          map[string]*caching.Node
 	builder        caching.TreeBuilder
 	updater        caching.TreeUpdater
+	locker         caching.Locker
 }
 
 //Constructor for Tree object
-func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeUpdater) (*Tree, error) {
+func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeUpdater,
+	locker caching.Locker) (*Tree, error) {
 	root := &caching.Node{
 		Name:     rootName,
 		Leaf:     false,
@@ -36,6 +38,7 @@ func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeU
 		nodes:          nodes,
 		builder:        builder,
 		updater:        updater,
+		locker:         locker,
 		BulkUpdates:    100,
 		UpdateRoutines: 10,
 	}
@@ -44,11 +47,11 @@ func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeU
 }
 
 func (tree *Tree) WriteLock(name, secret string, ttl uint64) (bool, error) {
-	return tree.updater.WriteLock(name, secret, ttl)
+	return tree.locker.WriteLock(name, secret, ttl)
 }
 
 func (tree *Tree) ReleaseLock(name, secret string) (bool, error) {
-	return tree.updater.ReleaseLock(name, secret)
+	return tree.locker.ReleaseLock(name, secret)
 }
 
 func (tree *Tree) SetNumUpdateRoutines(num int) {

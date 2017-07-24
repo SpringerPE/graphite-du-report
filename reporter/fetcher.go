@@ -86,6 +86,8 @@ func GetDetails(ips []string, cluster string, fetcher Fetcher) *pb.MetricDetails
 		if err != nil {
 			logging.LogError("timeout during fetching details", err)
 			//TODO: what to do here?
+			//we should generate an error and return otherwise it is
+			//going to panic
 		}
 		if response == nil {
 			continue

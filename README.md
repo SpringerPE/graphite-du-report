@@ -75,3 +75,8 @@ go get github.com/onsi/gomega
 ```
 
 then simply run ```ginkgo -r```
+
+## Creating a testing environment
+In order to run the `graphite-du-report` locally it is needed to provide two main dependencies:
+- a redis installation
+- a carbonserver, implementing the `metrics/details` endpoint. The directory `test` contains a mock carbonserver able to generate a well-formed details response. Just run `go run test/details_server.go`

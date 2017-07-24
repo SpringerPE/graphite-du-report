@@ -8,11 +8,11 @@ import (
 
 type TreeReader struct {
 	RootName string
-	reader   caching.TreeUpdater
+	reader   caching.TreeReader
 }
 
 //Constructor for Tree object
-func NewTreeReader(rootName string, reader caching.TreeUpdater) (*TreeReader, error) {
+func NewTreeReader(rootName string, reader caching.TreeReader) (*TreeReader, error) {
 	tree := &TreeReader{RootName: rootName, reader: reader}
 	return tree, nil
 }

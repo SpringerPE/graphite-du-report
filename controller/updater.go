@@ -18,10 +18,11 @@ func (up *Updater) createBuilderTree() *reporter.Tree {
 
 	builder := caching.NewMemBuilder()
 
-	reader := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
-	reader.SetNumBulkScans(config.BulkScans)
+	updater := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
+	updater.SetNumBulkScans(config.BulkScans)
+	locker := updater
 
-	tree, _ := reporter.NewTree(config.RootName, builder, reader)
+	tree, _ := reporter.NewTree(config.RootName, builder, updater, locker)
 	tree.SetNumUpdateRoutines(config.UpdateRoutines)
 	tree.SetNumBulkUpdates(config.BulkUpdates)
 

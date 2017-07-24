@@ -14,17 +14,22 @@ type TreeBuilder interface {
 	Clear()
 }
 
+type Locker interface {
+	WriteLock(string, string, uint64) (bool, error)
+	ReleaseLock(string, string) (bool, error)
+}
+
+type TreeReader interface {
+	ReadNode(string) (*Node, error)
+	ReadFlameMap() ([]string, error)
+}
+
 type TreeUpdater interface {
 	Version() (string, error)
-	VersionNext() (string, error)
 	IncrVersion() error
 	UpdateReaderVersion() error
 	UpdateNodes([]*Node) error
-	ReadNode(string) (*Node, error)
-	ReadFlameMap() ([]string, error)
 	Cleanup(string) error
-	WriteLock(string, string, uint64) (bool, error)
-	ReleaseLock(string, string) (bool, error)
 	Close() error
 }
 
