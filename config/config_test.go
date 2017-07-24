@@ -20,7 +20,10 @@ var _ = Describe("Config", func() {
 		It("should return a list of servers", func() {
 			s := "example.host:8080, 127.0.0.1:7777 , my.host:80"
 			sList := config.ParseServerList(s)
-			Expect(sList).To(Equal([]string{"example.host:8080", "127.0.0.1:7777", "my.host:80"}))
+			Expect(sList).To(Equal([]string{
+				"example.host:8080",
+				"127.0.0.1:7777",
+				"my.host:80"}))
 		})
 	})
 })

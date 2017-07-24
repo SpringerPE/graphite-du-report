@@ -112,14 +112,15 @@ var _ = Describe("Updater", func() {
 
 		It("should delete only the previous version keys", func() {
 			_ = mockRedisConn.Command("GET", "version").Expect("1")
-			mockRedisConn.Command("SCAN", int64(0), "count", 5000).Expect([]interface{}{
-				int64(10),
+			mockRedisConn.Command("SCAN", int64(0), "count", 5000).Expect(
 				[]interface{}{
-					[]byte("version"),
-					[]byte("0:root"),
-					[]byte("1:root"),
-				},
-			})
+					int64(10),
+					[]interface{}{
+						[]byte("version"),
+						[]byte("0:root"),
+						[]byte("1:root"),
+					},
+				})
 			mockRedisConn.Command("SCAN", int64(10), "count", 5000).Expect([]interface{}{
 				int64(0),
 				[]interface{}{

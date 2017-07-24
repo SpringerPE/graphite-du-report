@@ -103,7 +103,9 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
-	isGeneratedKey, err := regexp.Compile(fmt.Sprintf("(?P<Version>[0-9]+):(%s|folded)", rootName))
+	isGeneratedKey, err := regexp.Compile(
+		fmt.Sprintf("(?P<Version>[0-9]+):(%s|folded)", rootName))
+
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,9 @@ func Log(message string, isError bool, err interface{}) {
 
 	if isError {
 		writer = os.Stderr
-		formattedMessage = fmt.Sprintf("[%s] Exception occurred! | Message: %s | Details: %v", time.Now().String(), message, err)
+		formattedMessage = fmt.Sprintf(
+			"[%s] Exception occurred! | Message: %s | Details: %v",
+			time.Now().String(), message, err)
 	} else {
 		formattedMessage = fmt.Sprintf("[%s] %s", time.Now().String(), message)
 	}
