@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
 	<link rel="stylesheet" href="/static/css/flame.css">
+	<script src="/static/scripts/jquery-3.2.1.min.js"></script>
+	<script src="/static/scripts/functions.js"></script>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<title>SVG</title>
 </head>
 <body>
   <h1 id="title">Graphite disk usage</h1>
-  <object class="svg" type="image/svg+xml" data="data:image/svg+xml;base64,{{.svg}}"/>
-  </object>
-
+  <div id="svgdiv">
+  <div id="loaderImg"><img class="loader" src="/static/images/ajax-loader.gif"/></div>
+  </div>
 </body>
 </html>

@@ -16,6 +16,10 @@ import (
 	"github.com/uber/go-torch/renderer"
 )
 
+var flameTemplateString = `
+<object class="svg" type="image/svg+xml" data="data:image/svg+xml;base64,{{.svgImage}}"/>
+</object>
+ `
 var templates = template.Must(template.ParseGlob("static/templates/*"))
 
 type Worker struct {
@@ -52,6 +56,23 @@ func (worker *Worker) HandleNodeSize(w http.ResponseWriter, r *http.Request) {
 }
 
 func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+
+	params := make(map[string]interface{})
+	params["svg"] = ""
+
+	_ = templates.ExecuteTemplate(w, "flame.html", params)
+}
+
+func (worker *Worker) HandleFlameImage(w http.ResponseWriter, r *http.Request) {
+	t := template.New("Flame Image")
+	tmpl, err := t.Parse(flameTemplateString)
+	if err != nil {
+		helper.ErrorResponse(w, "failed parsing image template", err)
+		return
+	}
+
 	reader := worker.createTreeReader()
 
 	flame, err := reader.ReadFlameMap()
@@ -72,13 +93,13 @@ func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
 	cacheUntil := time.Now().Add(300 * time.Second).Format(http.TimeFormat)
 
 	sEnc := base64.StdEncoding.EncodeToString(flameGraph)
-	params := make(map[string]interface{})
-	params["svg"] = sEnc
+	objects := make(map[string]interface{})
+	objects["svgImage"] = sEnc
 
 	w.Header().Set("Last-Modified", cacheSince)
 	w.Header().Set("Expires", cacheUntil)
 	w.Header().Set("Cache-Control", "max-age=300, public")
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	err = templates.ExecuteTemplate(w, "flame.html", params)
+	err = tmpl.Execute(w, objects)
 }

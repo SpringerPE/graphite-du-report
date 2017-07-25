@@ -5,3 +5,9 @@ h1#title {
 object.svg {
 	width: 100%;
 }
+
+img.loader {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}

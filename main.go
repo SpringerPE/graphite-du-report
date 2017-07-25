@@ -71,6 +71,7 @@ func runWorker() {
 
 	router.HandleFunc("/size", worker.HandleNodeSize).Methods("GET").Name("Size")
 	router.HandleFunc("/flame", worker.HandleFlame).Methods("GET").Name("Flame")
+	router.HandleFunc("/flame_image", worker.HandleFlameImage).Methods("GET").Name("FlameImage")
 
 	srv := &http.Server{
 		Handler: router,
