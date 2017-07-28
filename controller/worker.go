@@ -16,6 +16,10 @@ import (
 	"github.com/uber/go-torch/renderer"
 )
 
+const usageString =`
+
+`
+
 var flameTemplateString = `
 <object class="svg" type="image/svg+xml" data="data:image/svg+xml;base64,{{.svgImage}}"/>
 </object>
@@ -39,6 +43,12 @@ func (worker *Worker) createTreeReader() *reporter.TreeReader {
 func NewWorker(config *config.WorkerConfig) (*Worker, error) {
 	worker := &Worker{config: config}
 	return worker, nil
+}
+
+func (worker *Worker) HandleRoot(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	_ = templates.ExecuteTemplate(w, "worker_home.html", make(map[interface{}]interface{}))
 }
 
 func (worker *Worker) HandleNodeSize(w http.ResponseWriter, r *http.Request) {

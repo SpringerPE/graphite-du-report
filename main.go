@@ -69,6 +69,7 @@ func runWorker() {
 
 	attachStatic(router)
 
+	router.HandleFunc("/", worker.HandleRoot).Methods("GET").Name("Home")
 	router.HandleFunc("/size", worker.HandleNodeSize).Methods("GET").Name("Size")
 	router.HandleFunc("/flame", worker.HandleFlame).Methods("GET").Name("Flame")
 	router.HandleFunc("/flame_image", worker.HandleFlameImage).Methods("GET").Name("FlameImage")

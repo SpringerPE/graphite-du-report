@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/static/css/worker_home.css">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Graphite DU homepage</title>
+</head>
+<body>
+<h1 id="title">Implemented endpoints</h1>
+<div>
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Parameters</th>
+            <th>Usage</th>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/size</td>
+            <td>path: dot separated string</td>
+            <td>Get the current usage in bytes for path</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/flame</td>
+            <td>None</td>
+            <td>Generate a html page including the flame graph</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/flame_image</td>
+            <td>None</td>
+            <td>Generate a flame graph representing the disk space</td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>
