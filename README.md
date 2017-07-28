@@ -25,7 +25,8 @@ The `worker` exposes:
 |Method|Endpoint|Parameters|Usage|
 |----------|----------|---------------|------------|
 |GET|`/size`|`path`: dot separated string|Get the current usage in bytes for `path`|
-|DELETE|`/flame`|None|Generate a flame graph representing the disk space|
+|GET|`/flame`|None|Generate a html page including the flame graph|
+|GET|`/flame_image`|None|Generate a flame graph representing the disk space|
 
 
 ## Requirements
