@@ -1,7 +1,4 @@
 $(document).ready(function(){
-	var someb64data = '';
-	var svgDiv = $('#svgdiv');
-
 	$.ajax({
 	    url: location.origin + "/render/flame",
 	    async: true,
