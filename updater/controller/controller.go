@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/SpringerPE/graphite-du-report/caching"
-	"github.com/SpringerPE/graphite-du-report/config"
 	"github.com/SpringerPE/graphite-du-report/helper"
 	"github.com/SpringerPE/graphite-du-report/logging"
-	"github.com/SpringerPE/graphite-du-report/reporter"
+
+	"github.com/SpringerPE/graphite-du-report/updater/reporter"
+	"github.com/SpringerPE/graphite-du-report/updater/config"
 )
 
 //TODO: make this a proper factory class
@@ -37,6 +38,12 @@ func NewUpdater(config *config.UpdaterConfig) *Updater {
 	return &Updater{
 		config: config,
 	}
+}
+
+func (up *Updater) HandleRoot(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "OK")
+	return
 }
 
 func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {

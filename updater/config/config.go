@@ -4,14 +4,6 @@ import (
 	"strings"
 )
 
-type WorkerConfig struct {
-	BindAddress string
-	BindPort    string
-	RootName    string
-	RedisAddr   string
-	RedisPasswd string
-}
-
 type UpdaterConfig struct {
 	Servers        []string
 	BindAddress    string
@@ -45,15 +37,5 @@ func DefaultUpdaterConfig() *UpdaterConfig {
 		UpdateRoutines: 10,
 		BulkUpdates:    100,
 		BulkScans:      10,
-	}
-}
-
-func DefaultWorkerConfig() *WorkerConfig {
-	return &WorkerConfig{
-		BindAddress: "127.0.0.1",
-		BindPort:    "6060",
-		RootName:    "root",
-		RedisAddr:   "localhost:6379",
-		RedisPasswd: "",
 	}
 }
