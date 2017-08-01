@@ -1,29 +1,44 @@
 ---
 applications:
-- name: graphite_updater
+- name: graphite-du-updater
   memory: 4G
   instances: 2
+  command: updater
   buildpack: https://github.com/cloudfoundry/go-buildpack.git#v1.8.5
   env:
+    GOGC: 20 
     GOVERSION: 1.8
+    GO_INSTALL_PACKAGE_SPEC: "./cmd/updater"
     GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
-    GRAPHITE_SERVERS: "10.0.0.1:8080,10.0.0.2:8080"
-    REDIS_ADDR: "redis-server:6379"
+    GRAPHITE_SERVERS: "localhost:8080"
+    REDIS_ADDR: "localhost:6379"
     REDIS_PASSWD: "password"
     UPDATE_ROUTINES: 2
     BULK_UPDATES: 100
     BULK_SCANS: 1000
-    ROLE: "updater"
-- name: graphite_worker
+    ENABLE_PPROF: true
+- name: graphite-du-worker
   memory: 2G
   instances: 2
+  command: worker
   buildpack: https://github.com/cloudfoundry/go-buildpack.git#v1.8.5
   env:
     GOVERSION: 1.8
+    GO_INSTALL_PACKAGE_SPEC: "./cmd/worker"
     GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
-    REDIS_ADDR: "10.230.38.76:6379"
+    REDIS_ADDR: "localhost:6379"
     REDIS_PASSWD: "password"
     UPDATE_ROUTINES: 10
     BULK_UPDATES: 100
     BULK_SCANS: 100
-    ROLE: "worker"
+- name: graphite-du-renderer
+  memory: 2G
+  instances: 2
+  command: renderer
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git#v1.8.5
+  routes:
+    - route: "graphite-du-visualiser.example.com/render"
+  env:
+    GOVERSION: 1.8
+    GO_INSTALL_PACKAGE_SPEC: "./cmd/renderer"
+    GOPACKAGENAME: "github.com/SpringerPE/graphite-du-report"
