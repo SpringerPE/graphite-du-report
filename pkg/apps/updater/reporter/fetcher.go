@@ -7,7 +7,7 @@ import (
 	_ "net/http/pprof"
 	"time"
 
-	"github.com/SpringerPE/graphite-du-report/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/logging"
 
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )

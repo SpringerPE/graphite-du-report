@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/SpringerPE/graphite-du-report/caching"
+	. "github.com/SpringerPE/graphite-du-report/pkg/caching"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/rafaeljusto/redigomock"

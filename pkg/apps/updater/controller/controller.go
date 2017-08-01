@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SpringerPE/graphite-du-report/caching"
-	"github.com/SpringerPE/graphite-du-report/helper"
-	"github.com/SpringerPE/graphite-du-report/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/caching"
+	"github.com/SpringerPE/graphite-du-report/pkg/helper"
+	"github.com/SpringerPE/graphite-du-report/pkg/logging"
 
-	"github.com/SpringerPE/graphite-du-report/updater/reporter"
-	"github.com/SpringerPE/graphite-du-report/updater/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/updater/reporter"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/updater/config"
 )
 
 //TODO: make this a proper factory class

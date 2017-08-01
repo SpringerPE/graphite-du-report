@@ -1,7 +1,7 @@
 package caching_test
 
 import (
-	. "github.com/SpringerPE/graphite-du-report/caching"
+	. "github.com/SpringerPE/graphite-du-report/pkg/caching"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

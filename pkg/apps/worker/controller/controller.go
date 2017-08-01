@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/SpringerPE/graphite-du-report/caching"
-	"github.com/SpringerPE/graphite-du-report/helper"
+	"github.com/SpringerPE/graphite-du-report/pkg/caching"
+	"github.com/SpringerPE/graphite-du-report/pkg/helper"
 
-	"github.com/SpringerPE/graphite-du-report/worker/reporter"
-	"github.com/SpringerPE/graphite-du-report/worker/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/reporter"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/config"
 )
 
-var templates = template.Must(template.ParseGlob("worker/static/templates/*"))
+var templates = template.Must(template.ParseGlob("assets/worker/static/templates/*"))
 
 type Worker struct {
 	config *config.WorkerConfig

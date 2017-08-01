@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/SpringerPE/graphite-du-report/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/logging"
 
-	"github.com/SpringerPE/graphite-du-report/updater/config"
-	"github.com/SpringerPE/graphite-du-report/updater/controller"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/updater/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/updater/controller"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"

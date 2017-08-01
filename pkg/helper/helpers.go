@@ -6,7 +6,7 @@ import (
 
 	"github.com/nu7hatch/gouuid"
 
-	"github.com/SpringerPE/graphite-du-report/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/logging"
 )
 
 func ErrorResponse(w http.ResponseWriter, msg string, err error) {

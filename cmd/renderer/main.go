@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/SpringerPE/graphite-du-report/logging"
-	"github.com/SpringerPE/graphite-du-report/renderer/config"
-	"github.com/SpringerPE/graphite-du-report/renderer/controller"
+	"github.com/SpringerPE/graphite-du-report/pkg/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/renderer/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/renderer/controller"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"

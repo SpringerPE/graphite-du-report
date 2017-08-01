@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/SpringerPE/graphite-du-report/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/logging"
 
-	"github.com/SpringerPE/graphite-du-report/worker/config"
-	"github.com/SpringerPE/graphite-du-report/worker/controller"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/controller"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -36,7 +36,7 @@ func attachProfiler(router *mux.Router) {
 }
 
 func attachStatic(router *mux.Router) {
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./worker/static"))))
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./assets/worker/static"))))
 }
 
 func main() {

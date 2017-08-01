@@ -1,8 +1,8 @@
 package reporter_test
 
 import (
-	"github.com/SpringerPE/graphite-du-report/caching"
-	"github.com/SpringerPE/graphite-du-report/updater/reporter"
+	"github.com/SpringerPE/graphite-du-report/pkg/caching"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/updater/reporter"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

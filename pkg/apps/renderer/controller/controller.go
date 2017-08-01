@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SpringerPE/graphite-du-report/helper"
-	"github.com/SpringerPE/graphite-du-report/renderer/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/helper"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/renderer/config"
 
 	torch "github.com/uber/go-torch/renderer"
 )

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/SpringerPE/graphite-du-report/caching"
+	"github.com/SpringerPE/graphite-du-report/pkg/caching"
 
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
