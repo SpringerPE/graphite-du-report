@@ -26,10 +26,10 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
   packages = ["carbonzipperpb3"]
-  revision = "7a46f4dd058aa11b0e2633cf805428b466533969"
+  revision = "d1a3cec4169b36e03e62c374a583bb85c6a4172a"
+  version = "0.72"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -56,10 +56,10 @@
   revision = "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
 
 [[projects]]
-  branch = "master"
   name = "github.com/onsi/ginkgo"
   packages = [".","config","internal/codelocation","internal/containernode","internal/failer","internal/leafnodes","internal/remote","internal/spec","internal/spec_iterator","internal/specrunner","internal/suite","internal/testingtproxy","internal/writer","reporters","reporters/stenographer","reporters/stenographer/support/go-colorable","reporters/stenographer/support/go-isatty","types"]
-  revision = "228e3a805a0579a328589d6810bc1edd03f2299f"
+  revision = "9eda700730cba42af70d53180f9dcce9266bc2bc"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/onsi/gomega"
@@ -77,31 +77,31 @@
   branch = "master"
   name = "github.com/uber/go-torch"
   packages = ["renderer","stack"]
-  revision = "31163c52574978688e99810c1761f36d9191a875"
+  revision = "4f9a6597779c9a537e61ecb385771d7d9afaf6dd"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom","html/charset"]
-  revision = "ab5485076ff3407ad2d02db054635913f017b0ed"
+  revision = "f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "c4489faa6e5ab84c0ef40d6ee878f7a030281f0f"
+  revision = "0f826bdd13b500be0f1d4004938ad978fcc6031e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "836efe42bb4aa16aaa17b9c155d8813d336ed720"
+  revision = "3bd178b88a8180be2df394a1fbb81313916f0e7b"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
   packages = ["."]
-  revision = "7f0871f2e17818990e4eed73f9b5c2f429501228"
-  version = "v2.2.4"
+  revision = "1087e65c9441605df944fb12c33f0fe7072d18ca"
+  version = "v2.2.5"
 
 [[projects]]
   branch = "v2"
@@ -112,6 +112,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ed5f423c37aafcaf25b03500369beeed5d5657e5bfa16d0f1ae4d9d39a4b86f2"
+  inputs-digest = "3ca80c28e462985ad3c22d749eef38a9229cd55b9acbeefcb973445480342e84"
   solver-name = "gps-cdcl"
   solver-version = 1
