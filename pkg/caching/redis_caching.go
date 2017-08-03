@@ -49,8 +49,39 @@ type Pool interface {
 }
 
 type RedisCaching struct {
-	Pool      Pool
-	BulkScans int
+	Pool          Pool
+	BulkScans     int
+	StoreChildren bool
+}
+
+func NewRedisCaching(address string, passwd string, storeChildren bool) *RedisCaching {
+	cacher := &RedisCaching{
+		Pool:          newPool(address, passwd),
+		BulkScans:     10,
+		StoreChildren: storeChildren,
+	}
+	return cacher
+}
+
+func newPool(addr string, passwd string) Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		Wait:        true,
+		MaxActive:   10,
+		IdleTimeout: 5 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial(
+				"tcp",
+				addr,
+				redis.DialPassword(passwd),
+				redis.DialConnectTimeout(10*time.Second),
+			)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		},
+	}
 }
 
 func (r *RedisCaching) Close() error {
@@ -178,28 +209,27 @@ func (r *RedisCaching) Version() (string, error) {
 	return version, err
 }
 
-func (r *RedisCaching) versionNext() (string, error) {
-	conn := r.Pool.Get()
-	defer conn.Close()
-
+func (r *RedisCaching) versionNext(conn redis.Conn) (string, error) {
 	version, err := redis.String(conn.Do("GET", "version.next"))
 	return version, err
 }
 
 func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 	var nodeEntry string
-	version, err := r.versionNext()
-	if err != nil {
-		return err
-	}
 
 	conn := r.Pool.Get()
 	defer conn.Close()
+
+	version, err := r.versionNext(conn)
+	if err != nil {
+		return err
+	}
 
 	conn.Send("MULTI")
 	for _, node := range nodes {
 		versionedName := version + ":" + node.Name
 		conn.Send("HMSET", versionedName, "leaf", node.Leaf, "size", node.Size)
+
 		//save in folded format as well for flame graphs
 		entryName := strings.Replace(node.Name, ".", ";", -1)
 		if node.Leaf == true {
@@ -207,8 +237,10 @@ func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 			conn.Send("LPUSH", version+":folded", nodeEntry)
 		}
 
-		for _, child := range node.Children {
-			conn.Send("SADD", versionedName+":children", child)
+		if r.StoreChildren {
+			for _, child := range node.Children {
+				conn.Send("SADD", versionedName+":children", child)
+			}
 		}
 	}
 	_, err = conn.Do("EXEC")
@@ -217,13 +249,13 @@ func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 }
 
 func (r *RedisCaching) AddChild(node *Node, child string) error {
-	version, err := r.versionNext()
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.versionNext(conn)
 	if err != nil {
 		return err
 	}
-
-	conn := r.Pool.Get()
-	defer conn.Close()
 
 	versionedName := version + ":" + node.Name
 
@@ -266,45 +298,18 @@ func (r *RedisCaching) ReadNode(key string) (*Node, error) {
 	if err = redis.ScanStruct(reply, node); err != nil {
 		return nil, err
 	}
-	reply, err = redis.Values(conn.Do("SMEMBERS", key+":children"))
-	var children []string
-	if err := redis.ScanSlice(reply, &children); err != nil {
-		return nil, err
+
+	//retrieve childrens if they've been stored
+	if r.StoreChildren {
+		reply, err = redis.Values(conn.Do("SMEMBERS", key+":children"))
+		var children []string
+		if err := redis.ScanSlice(reply, &children); err != nil {
+			return nil, err
+		}
+
+		node.Children = children
 	}
 
-	node.Children = children
 	return node, nil
 }
 
-func NewRedisCaching(address string, passwd string) *RedisCaching {
-	cacher := &RedisCaching{
-		Pool:      newPool(address, passwd),
-		BulkScans: 10,
-	}
-	return cacher
-}
-
-func newPool(addr string, passwd string) Pool {
-	return &redis.Pool{
-		MaxIdle:     3,
-		Wait:        true,
-		MaxActive:   10,
-		IdleTimeout: 5 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial(
-				"tcp",
-				addr,
-				redis.DialPassword(passwd),
-				redis.DialConnectTimeout(10*time.Second),
-			)
-			if err != nil {
-				return nil, err
-			}
-			return c, nil
-		},
-	}
-}
-
-var (
-	pool *redis.Pool
-)

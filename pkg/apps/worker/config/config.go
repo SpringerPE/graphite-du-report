@@ -6,6 +6,7 @@ type WorkerConfig struct {
 	RootName    string
 	RedisAddr   string
 	RedisPasswd string
+	RetrieveChildren bool
 }
 
 func DefaultWorkerConfig() *WorkerConfig {
@@ -15,5 +16,6 @@ func DefaultWorkerConfig() *WorkerConfig {
 		RootName:    "root",
 		RedisAddr:   "localhost:6379",
 		RedisPasswd: "",
+		RetrieveChildren: false,
 	}
 }

@@ -14,6 +14,7 @@ type UpdaterConfig struct {
 	UpdateRoutines int
 	BulkUpdates    int
 	BulkScans      int
+	StoreChildren  bool
 }
 
 func ParseServerList(servers string) []string {
@@ -37,5 +38,6 @@ func DefaultUpdaterConfig() *UpdaterConfig {
 		UpdateRoutines: 10,
 		BulkUpdates:    100,
 		BulkScans:      10,
+		StoreChildren:  false,
 	}
 }

@@ -21,9 +21,7 @@ var (
 	rootName          = kingpin.Flag("root-name", "name for the root of the tree").Default("root").OverrideDefaultFromEnvar("ROOT_NAME").String()
 	redisAddr         = kingpin.Flag("redis-addr", "bind address for the redis instance").Default("localhost:6379").OverrideDefaultFromEnvar("REDIS_ADDR").String()
 	redisPasswd       = kingpin.Flag("redis-passwd", "password for redis").Default("").OverrideDefaultFromEnvar("REDIS_PASSWD").String()
-	numUpdateRoutines = kingpin.Flag("num-update-routines", "number of concurrent update routines").Default("10").OverrideDefaultFromEnvar("UPDATE_ROUTINES").Int()
-	numBulkUpdates    = kingpin.Flag("num-bulk-updates", "number of concurrent bulk node updates").Default("100").OverrideDefaultFromEnvar("BULK_UPDATES").Int()
-	numBulkScans      = kingpin.Flag("num-bulk-scans", "number of concurrent bulk node scans").Default("100").OverrideDefaultFromEnvar("BULK_SCANS").Int()
+	retrieveChildren  = kingpin.Flag("retrieve-children", "whether node children info should be retrieved from the cache").Default("false").OverrideDefaultFromEnvar("RETRIEVE_CHILDREN").Bool()
 )
 
 func attachProfiler(router *mux.Router) {
@@ -51,6 +49,7 @@ func runWorker() {
 		RootName:    *rootName,
 		RedisAddr:   *redisAddr,
 		RedisPasswd: *redisPasswd,
+		RetrieveChildren: *retrieveChildren,
 	}
 
 	worker, _ := controller.NewWorker(config)

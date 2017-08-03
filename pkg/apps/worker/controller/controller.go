@@ -23,7 +23,7 @@ type Worker struct {
 func (worker *Worker) createTreeReader() *reporter.TreeReader {
 	conf := worker.config
 
-	reader := caching.NewRedisCaching(conf.RedisAddr, conf.RedisPasswd)
+	reader := caching.NewRedisCaching(conf.RedisAddr, conf.RedisPasswd, conf.RetrieveChildren)
 	treeReader, _ := reporter.NewTreeReader(conf.RootName, reader)
 
 	return treeReader

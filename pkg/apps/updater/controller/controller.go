@@ -19,7 +19,7 @@ func (up *Updater) createBuilderTree() *reporter.Tree {
 
 	builder := caching.NewMemBuilder()
 
-	updater := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd)
+	updater := caching.NewRedisCaching(config.RedisAddr, config.RedisPasswd, config.StoreChildren)
 	updater.SetNumBulkScans(config.BulkScans)
 	locker := updater
 

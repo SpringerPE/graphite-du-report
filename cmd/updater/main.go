@@ -25,6 +25,7 @@ var (
 	numUpdateRoutines = kingpin.Flag("num-update-routines", "number of concurrent update routines").Default("10").OverrideDefaultFromEnvar("UPDATE_ROUTINES").Int()
 	numBulkUpdates    = kingpin.Flag("num-bulk-updates", "number of concurrent bulk node updates").Default("100").OverrideDefaultFromEnvar("BULK_UPDATES").Int()
 	numBulkScans      = kingpin.Flag("num-bulk-scans", "number of concurrent bulk node scans").Default("100").OverrideDefaultFromEnvar("BULK_SCANS").Int()
+	storeChildren      = kingpin.Flag("store-children", "whether node children info should be stored in the cache").Default("false").OverrideDefaultFromEnvar("STORE_CHILDREN").Bool()
 )
 
 func attachProfiler(router *mux.Router) {
@@ -53,6 +54,7 @@ func runUpdater() {
 		UpdateRoutines: *numUpdateRoutines,
 		BulkUpdates:    *numBulkUpdates,
 		BulkScans:      *numBulkScans,
+		StoreChildren:  *storeChildren,
 	}
 
 	updater := controller.NewUpdater(config)
