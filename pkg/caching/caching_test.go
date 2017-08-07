@@ -23,27 +23,61 @@ var _ = Describe("Builder", func() {
 			Name:     "root",
 			Leaf:     false,
 			Size:     int64(1),
-			Children: []string{},
+			Children: []*Node{},
 		}
 		nodes["root.team1"] = &Node{
 			Name:     "root.team1",
 			Leaf:     true,
 			Size:     int64(1),
-			Children: []string{},
+			Children: []*Node{},
 		}
+
 		nodes["root.team2"] = &Node{
 			Name:     "root.team2",
 			Leaf:     true,
 			Size:     int64(1),
-			Children: []string{},
+			Children: []*Node{},
 		}
 
 		notAdded = &Node{
 			Name:     "not_added",
 			Leaf:     true,
 			Size:     int64(1),
-			Children: []string{},
+			Children: []*Node{},
 		}
+	})
+
+	Context("given a list of nodes", func(){
+
+		var (
+			expectedJson string
+		)
+
+		BeforeEach(func(){
+			expectedJson = `{"name": "root",
+        		"children": [
+          		{
+            		"name": "team1",
+            		"value": 1
+          		},
+          		{
+            		"name": "team2",
+            		"value": 1
+          		}
+        	]}`
+		})
+
+		JustBeforeEach(func(){
+			nodes["root"].Children = append(nodes["root"].Children, nodes["root.team1"])
+			nodes["root"].Children = append(nodes["root"].Children, nodes["root.team2"])
+		})
+
+		It("should produce a valid json representation", func(){
+			jsonString, err := nodes["root"].MarshalJSON()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(jsonString).To(MatchJSON(expectedJson))
+		})
 	})
 
 	Context("given a list of nodes and a mem builder", func() {
@@ -59,14 +93,14 @@ var _ = Describe("Builder", func() {
 		})
 
 		It("should generate an error if we try to add a child to a not existent node", func() {
-			err := builder.AddChild(notAdded, "child")
+			err := builder.AddChild(notAdded, nodes["root"])
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("should be possible to add them", func() {
 			builder.AddNode(nodes["root"])
-			builder.AddChild(nodes["root"], "team1")
-			builder.AddChild(nodes["root"], "team2")
+			builder.AddChild(nodes["root"], nodes["root.team1"])
+			builder.AddChild(nodes["root"], nodes["root.team2"])
 
 			builder.AddNode(nodes["root.team1"])
 			builder.AddNode(nodes["root.team2"])
@@ -74,8 +108,8 @@ var _ = Describe("Builder", func() {
 			root, err := builder.GetNode("root")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(root.Children).To(HaveLen(2))
-			Expect(root.Children).To(ContainElement("team1"))
-			Expect(root.Children).To(ContainElement("team2"))
+			Expect(root.Children).To(ContainElement(nodes["root.team1"]))
+			Expect(root.Children).To(ContainElement(nodes["root.team2"]))
 		})
 	})
 })
@@ -89,23 +123,27 @@ var _ = Describe("Updater", func() {
 		mockRedisPool Pool
 		storeChildren bool
 		nodes    []*Node
+		rootTeam1 *Node
 	)
 
 	BeforeEach(func(){
 		nodes = []*Node{}
+
+		rootTeam1 = &Node{
+			Name:     "root.team1",
+			Leaf:     true,
+			Size:     int64(1),
+			Children: []*Node{},
+		}
+		nodes = append(nodes,rootTeam1)
+
 		nodes = append(nodes, &Node{
 			Name:     "root",
 			Leaf:     false,
 			Size:     int64(1),
-			Children: []string{"team1"},
+			Children: []*Node{rootTeam1},
 		})
 
-		nodes = append(nodes, &Node{
-			Name:     "root.team1",
-			Leaf:     true,
-			Size:     int64(1),
-			Children: []string{},
-		})
 	})
 
 	JustBeforeEach(func() {
@@ -148,7 +186,7 @@ var _ = Describe("Updater", func() {
 				"2:root", "leaf", false, "size", int64(1)).Expect("ok")
 
 			//its children are added
-			addCmd = mockRedisConn.Command("SADD", "2:root:children", "team1").Expect("ok")
+			addCmd = mockRedisConn.Command("SADD", "2:root:children", "root.team1").Expect("ok")
 			//the leaf node is set and its folded representation is pushed
 			mockRedisConn.Command("HMSET",
 				"2:root.team1", "leaf", true, "size", int64(1)).Expect("ok")

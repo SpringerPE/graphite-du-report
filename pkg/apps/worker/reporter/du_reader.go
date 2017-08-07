@@ -26,6 +26,11 @@ func (tree *TreeReader) ReadFlameMap() ([]string, error) {
 	return tree.reader.ReadFlameMap()
 }
 
+func (tree *TreeReader) ReadJsonTree() ([]byte, error) {
+	return tree.reader.ReadJsonTree()
+}
+
+
 func (tree *TreeReader) GetNodeSize(path string) (int64, error) {
 	size := int64(0)
 	node, _ := tree.ReadNode(path)

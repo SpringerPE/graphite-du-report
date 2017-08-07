@@ -6,6 +6,7 @@ import (
 	"net/http/pprof"
 
 	"github.com/SpringerPE/graphite-du-report/pkg/logging"
+	"github.com/SpringerPE/graphite-du-report/pkg/helper"
 
 	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/config"
 	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/controller"
@@ -17,7 +18,7 @@ import (
 var (
 	profiling         = kingpin.Flag("profiling", "enable profiling via pprof").Default("false").OverrideDefaultFromEnvar("ENABLE_PPROF").Bool()
 	bindAddress       = kingpin.Flag("bind-address", "bind address for this server").Default("0.0.0.0").OverrideDefaultFromEnvar("BIND_ADDRESS").String()
-	bindPort          = kingpin.Flag("bind-port", "bind port for this server").Default("6061").OverrideDefaultFromEnvar("PORT").String()
+	bindPort          = kingpin.Flag("bind-port", "bind port for this server").Default("6062").OverrideDefaultFromEnvar("PORT").String()
 	rootName          = kingpin.Flag("root-name", "name for the root of the tree").Default("root").OverrideDefaultFromEnvar("ROOT_NAME").String()
 	redisAddr         = kingpin.Flag("redis-addr", "bind address for the redis instance").Default("localhost:6379").OverrideDefaultFromEnvar("REDIS_ADDR").String()
 	redisPasswd       = kingpin.Flag("redis-passwd", "password for redis").Default("").OverrideDefaultFromEnvar("REDIS_PASSWD").String()
@@ -65,6 +66,8 @@ func runWorker() {
 	router.HandleFunc("/size", worker.HandleNodeSize).Methods("GET").Name("Size")
 	router.HandleFunc("/folded", worker.HandleFoldedData).Methods("GET").Name("Folder")
 	router.HandleFunc("/flame", worker.HandleFlame).Methods("GET").Name("Flame")
+
+	router.HandleFunc("/json", helper.MakeGzipHandler(worker.HandleJsonData)).Methods("GET").Name("Json")
 
 	srv := &http.Server{
 		Handler: router,

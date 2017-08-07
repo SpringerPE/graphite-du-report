@@ -1,16 +1,46 @@
 package caching
 
+import (
+	"encoding/json"
+	"strings"
+)
+
 type Node struct {
 	Name     string   `json:"name" redis:"-"`
-	Leaf     bool     `json:"leaf" redis:"leaf"`
-	Size     int64    `json:"size" redis:"size"`
-	Children []string `json:"children" redis:"-"`
+	Leaf     bool     `json:"-" redis:"leaf"`
+	Size     int64    `json:"value" redis:"size"`
+	Children []*Node `json:"children" redis:"-"`
+}
+
+func (node *Node) MarshalJSON() ([]byte, error) {
+	type Alias Node
+
+	nameElements := strings.Split(node.Name, ".")
+	lastName := nameElements[len(nameElements)-1]
+
+	if node.Leaf {
+		return json.Marshal(&struct {
+			Name string `json:"name"`
+			Size int64 `json:"value"`
+		}{
+			Name: lastName,
+			Size: node.Size,
+		})
+	} else {
+		return json.Marshal(&struct {
+			Name string `json:"name"`
+			Children []*Node `json:"children"`
+		}{
+			Name: lastName,
+			Children: node.Children,
+		})
+	}
 }
 
 type TreeBuilder interface {
 	GetNode(string) (*Node, error)
 	AddNode(*Node) error
-	AddChild(*Node, string) error
+	AddChild(*Node, *Node) error
 	Clear()
 }
 
@@ -22,6 +52,7 @@ type Locker interface {
 type TreeReader interface {
 	ReadNode(string) (*Node, error)
 	ReadFlameMap() ([]string, error)
+	ReadJsonTree() ([]byte, error)
 }
 
 type TreeUpdater interface {
@@ -29,6 +60,7 @@ type TreeUpdater interface {
 	IncrVersion() error
 	UpdateReaderVersion() error
 	UpdateNodes([]*Node) error
+	UpdateJson(*Node) error
 	Cleanup(string) error
 	Close() error
 }

@@ -73,31 +73,34 @@ var _ = Describe("Reporter", func() {
 			It("should be able to construct the metrics tree", func() {
 
 				root, _ := tree.GetNode(tree.RootName)
-
-				childrenNames := []string{"team1", "team2"}
+				rootChildrenNames := []string{}
+				for _, child := range root.Children {
+					rootChildrenNames = append(rootChildrenNames, child.Name)
+				}
+				childrenNames := []string{"root.team1", "root.team2"}
 
 				//tree should have two children named team1 and team2
 				Expect(root.Children).To(HaveLen(2))
 				for _, key := range childrenNames {
-					Expect(root.Children).To(ContainElement(key))
+					Expect(rootChildrenNames).To(ContainElement(key))
 				}
 
 				//tree should two nodes named stats
 				for _, key := range childrenNames {
-					child, err := tree.GetNodeFromRoot(key + ".stats")
+					child, err := tree.GetNode(key + ".stats")
 					Expect(err).To(BeNil())
 					Expect(child.Leaf).To(BeFalse())
 				}
 
 				//tree should not contain original leaves (metric files)
 				for _, key := range childrenNames {
-					_, err := tree.GetNodeFromRoot(key + ".metric1")
+					_, err := tree.GetNode(key + ".metric1")
 					Expect(err).NotTo(BeNil())
 				}
 
 				//nodes 1 level up the leaves should be marked as leaves
 				for _, key := range childrenNames {
-					child, err := tree.GetNodeFromRoot(key + ".stats.gauges")
+					child, err := tree.GetNode(key + ".stats.gauges")
 					Expect(err).To(BeNil())
 					Expect(child.Leaf).To(BeTrue())
 				}

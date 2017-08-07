@@ -16,7 +16,7 @@ type Tree struct {
 	RootName       string
 	UpdateRoutines int
 	BulkUpdates    int
-	nodes          map[string]*caching.Node
+	nodes          map[string]*caching.Node `json:"tree"`
 	builder        caching.TreeBuilder
 	updater        caching.TreeUpdater
 	locker         caching.Locker
@@ -29,7 +29,7 @@ func NewTree(rootName string, builder caching.TreeBuilder, updater caching.TreeU
 		Name:     rootName,
 		Leaf:     false,
 		Size:     int64(0),
-		Children: []string{},
+		Children: []*caching.Node{},
 	}
 
 	nodes := map[string]*caching.Node{rootName: root}
@@ -78,7 +78,7 @@ func (tree *Tree) AddNode(key string, node *caching.Node) error {
 	return tree.builder.AddNode(node)
 }
 
-func (tree *Tree) AddChild(node *caching.Node, child string) error {
+func (tree *Tree) AddChild(node *caching.Node, child *caching.Node) error {
 	return tree.builder.AddChild(node, child)
 }
 
@@ -106,6 +106,7 @@ func (tree *Tree) Persist() error {
 	// Save the tree to the persistent datastore
 	// TODO: generate and handle errors here too
 	tree.persistTree(root)
+	tree.updater.UpdateJson(root)
 	//Update the reader version to the current version upon succeeding
 	err = tree.UpdateReaderVersion()
 	if err != nil {
@@ -119,7 +120,6 @@ func (tree *Tree) Persist() error {
 		return fmt.Errorf("%s: %v", "error while cleaning up old versions", err)
 	}
 	logging.LogStd(fmt.Sprintf("%s", "Cleaning up finished"))
-
 	return nil
 }
 
@@ -142,7 +142,8 @@ func (tree *Tree) persistTree(root *caching.Node) {
 func (tree *Tree) persist(root *caching.Node, parent *caching.Node, updateOps chan *caching.Node) {
 	//if it is a leaf its size is already given
 	for _, child := range root.Children {
-		node, err := tree.GetNode(root.Name + "." + child)
+		node, err := tree.GetNode(child.Name)
+		//TODO: handle this somehow
 		if err != nil {
 		}
 		tree.persist(node, root, updateOps)
@@ -195,7 +196,6 @@ func (tree *Tree) ConstructTree(details *pb.MetricDetailsResponse) error {
 
 		for currentIndex := 0; currentIndex <= leafIndex; currentIndex++ {
 			currentName := strings.Join(parts[0:currentIndex+1], ".")
-
 			if val, _ := tree.GetNodeFromRoot(currentName); val != nil {
 				alreadyVisited = append(alreadyVisited, val)
 				continue
@@ -214,15 +214,17 @@ func (tree *Tree) ConstructTree(details *pb.MetricDetailsResponse) error {
 
 			currentNode := &caching.Node{
 				Name:     tree.RootName + "." + currentName,
-				Children: []string{},
+				Children: []*caching.Node{},
 				Leaf:     true,
 				Size:     int64(0),
 			}
+
 			tree.AddNode(currentName, currentNode)
-			tree.AddChild(alreadyVisited[len(alreadyVisited)-1], parts[currentIndex])
+			tree.AddChild(alreadyVisited[len(alreadyVisited)-1], currentNode)
 
 			alreadyVisited = append(alreadyVisited, currentNode)
 		}
 	}
+
 	return nil
 }

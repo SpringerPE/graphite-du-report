@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"encoding/json"
 )
 
 var ErrLockMismatch = errors.New("key is locked with a different secret")
@@ -214,6 +215,34 @@ func (r *RedisCaching) versionNext(conn redis.Conn) (string, error) {
 	return version, err
 }
 
+func (r *RedisCaching) UpdateJson(root *Node) error {
+
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.versionNext(conn)
+	if err != nil {
+		return err
+	}
+
+	jsonTree, err := json.Marshal(root)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.Do("SET", version+":json", jsonTree)
+	return err
+}
+
+
+/* Stores a list of nodes and their children (if StoreChildren is set to true) into the redis
+datastore.
+
+Nodes are stored in a dictionary whose entries look like: "version:node-name": {"leaf", bool, "size", int64)}
+Children are stored in a list: "version:node-name:children": ["name1", "name2"]
+
+This method stores a folded data representation suitable for direct use when creating flame graphs.
+ */
 func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 	var nodeEntry string
 
@@ -239,7 +268,7 @@ func (r *RedisCaching) UpdateNodes(nodes []*Node) error {
 
 		if r.StoreChildren {
 			for _, child := range node.Children {
-				conn.Send("SADD", versionedName+":children", child)
+				conn.Send("SADD", versionedName+":children", child.Name)
 			}
 		}
 	}
@@ -261,6 +290,18 @@ func (r *RedisCaching) AddChild(node *Node, child string) error {
 
 	_, err = conn.Do("SADD", versionedName+":children", child)
 	return err
+}
+
+func (r *RedisCaching) ReadJsonTree() ([]byte, error) {
+	version, err := r.Version()
+	if err != nil {
+		return nil, err
+	}
+
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	return redis.Bytes(conn.Do("GET", version+":json"))
 }
 
 func (r *RedisCaching) ReadFlameMap() ([]string, error) {
@@ -297,17 +338,6 @@ func (r *RedisCaching) ReadNode(key string) (*Node, error) {
 
 	if err = redis.ScanStruct(reply, node); err != nil {
 		return nil, err
-	}
-
-	//retrieve childrens if they've been stored
-	if r.StoreChildren {
-		reply, err = redis.Values(conn.Do("SMEMBERS", key+":children"))
-		var children []string
-		if err := redis.ScanSlice(reply, &children); err != nil {
-			return nil, err
-		}
-
-		node.Children = children
 	}
 
 	return node, nil

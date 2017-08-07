@@ -79,3 +79,17 @@ func (worker *Worker) HandleFoldedData(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(flameInput))
 }
+
+func (worker *Worker) HandleJsonData(w http.ResponseWriter, r *http.Request) {
+	reader := worker.createTreeReader()
+	jsonTree, err := reader.ReadJsonTree()
+	if err != nil {
+		helper.ErrorResponse(w, "failed reading the json for the tree", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, string(jsonTree))
+}

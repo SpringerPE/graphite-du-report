@@ -100,6 +100,16 @@ func (r *MockUpdater) UpdateNodes(nodes []*caching.Node) error {
 }
 
 //TODO
+func (r *MockUpdater) UpdateJson(root *caching.Node) error {
+	return nil
+}
+
+func (r *MockUpdater) ReadJsonTree() ([]byte, error) {
+	return []byte{}, nil
+}
+
+
+//TODO
 func (r *MockUpdater) ReadFlameMap() ([]string, error) {
 	return nil, nil
 }

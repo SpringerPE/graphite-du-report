@@ -25,7 +25,7 @@ func (r *MemBuilder) AddNode(node *Node) error {
 	return nil
 }
 
-func (r *MemBuilder) AddChild(node *Node, child string) (err error) {
+func (r *MemBuilder) AddChild(node *Node, child *Node) (err error) {
 	if cachedNode, ok := r.nodes[node.Name]; ok {
 		cachedNode.Children = append(cachedNode.Children, child)
 	} else {
