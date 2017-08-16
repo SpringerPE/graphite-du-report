@@ -62,6 +62,7 @@ func (up *Updater) PopulateDetails(w http.ResponseWriter, r *http.Request) {
 	// try to acquire the lock
 	ok, err := tree.WriteLock(lockName, secret, 120)
 	if !ok {
+		logging.LogError("failed to acquire the lock", err)
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprintf(w, "Another update operation is currently running")
 		return
