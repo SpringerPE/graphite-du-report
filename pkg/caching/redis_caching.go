@@ -127,13 +127,13 @@ func (r *RedisCaching) SetNumBulkScans(num int) {
 }
 
 func (r *RedisCaching) Cleanup(rootName string) error {
-	version, err := r.Version()
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.version(conn)
 	if err != nil {
 		return err
 	}
-
-	conn := r.Pool.Get()
-	defer conn.Close()
 
 	isGeneratedKey, err := regexp.Compile(
 		fmt.Sprintf("(?P<Version>[0-9]+):(%s|folded)", rootName))
@@ -206,6 +206,11 @@ func (r *RedisCaching) Version() (string, error) {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
+	version, err := redis.String(conn.Do("GET", "version"))
+	return version, err
+}
+
+func (r *RedisCaching) version(conn redis.Conn) (string, error) {
 	version, err := redis.String(conn.Do("GET", "version"))
 	return version, err
 }
@@ -293,37 +298,37 @@ func (r *RedisCaching) AddChild(node *Node, child string) error {
 }
 
 func (r *RedisCaching) ReadJsonTree() ([]byte, error) {
-	version, err := r.Version()
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.version(conn)
 	if err != nil {
 		return nil, err
 	}
-
-	conn := r.Pool.Get()
-	defer conn.Close()
 
 	return redis.Bytes(conn.Do("GET", version+":json"))
 }
 
 func (r *RedisCaching) ReadFlameMap() ([]string, error) {
-	version, err := r.Version()
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.version(conn)
 	if err != nil {
 		return nil, err
 	}
-
-	conn := r.Pool.Get()
-	defer conn.Close()
 
 	return redis.Strings(conn.Do("LRANGE", version+":folded", 0, -1))
 }
 
 func (r *RedisCaching) ReadNode(key string) (*Node, error) {
-	version, err := r.Version()
+	conn := r.Pool.Get()
+	defer conn.Close()
+
+	version, err := r.version(conn)
 	if err != nil {
 		return nil, err
 	}
-
-	conn := r.Pool.Get()
-	defer conn.Close()
 
 	node := &Node{Name: key}
 	key = version + ":" + key
