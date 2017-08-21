@@ -1,12 +1,12 @@
 package config
 
 type WorkerConfig struct {
-	BindAddress string
-	BindPort    string
-	RootName    string
-	RedisAddr   string
-	RedisPasswd string
-	RetrieveChildren bool
+	BindAddress string `json:"bind_address"`
+	BindPort    string `json:"bind_port"`
+	RootName    string `json:"root_name"`
+	RedisAddr   string `json:"redis_addr"`
+	RedisPasswd string `json:"redis_passwd"`
+	RetrieveChildren bool `json:"retrieve_children"`
 }
 
 func DefaultWorkerConfig() *WorkerConfig {
