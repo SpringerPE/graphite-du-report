@@ -16,7 +16,7 @@ type Tree struct {
 	RootName       string
 	UpdateRoutines int
 	BulkUpdates    int
-	nodes          map[string]*caching.Node `json:"tree"`
+	nodes          map[string]*caching.Node
 	builder        caching.TreeBuilder
 	updater        caching.TreeUpdater
 	locker         caching.Locker
