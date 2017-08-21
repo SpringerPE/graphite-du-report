@@ -136,7 +136,7 @@ func (r *RedisCaching) Cleanup(rootName string) error {
 	}
 
 	isGeneratedKey, err := regexp.Compile(
-		fmt.Sprintf("(?P<Version>[0-9]+):(%s|folded)", rootName))
+		fmt.Sprintf("(?P<Version>[0-9]+):(%s|folded|json)", rootName))
 
 	if err != nil {
 		return err
@@ -194,11 +194,11 @@ func (r *RedisCaching) UpdateReaderVersion() error {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
-	next_version, err := redis.String(conn.Do("GET", "version.next"))
+	nextVersion, err := r.versionNext(conn)
 	if err != nil {
 		return err
 	}
-	_, err = conn.Do("SET", "version", next_version)
+	_, err = conn.Do("SET", "version", nextVersion)
 	return err
 }
 
@@ -206,7 +206,7 @@ func (r *RedisCaching) Version() (string, error) {
 	conn := r.Pool.Get()
 	defer conn.Close()
 
-	version, err := redis.String(conn.Do("GET", "version"))
+	version, err := r.version(conn)
 	return version, err
 }
 
