@@ -10,6 +10,7 @@ import (
 
 	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/config"
 	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/controller"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/reporter"
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -65,7 +66,13 @@ func runWorker() {
 		panic("cannot marshal worker configuration into valid json")
 	}
 
-	worker, _ := controller.NewWorker(config)
+	treeReaderConfig, err := reporter.NewRedisTreeReaderConfig(jsonWorkerConfig)
+	if err != nil {
+		panic("cannot generate a new tree reader config from the worker config")
+	}
+	var treeReaderFactory reporter.TreeReaderFactory
+	treeReaderFactory = reporter.NewRedisTreeReaderFactory(treeReaderConfig)
+	worker, _ := controller.NewWorker(workerConfig, treeReaderFactory)
 
 	router := mux.NewRouter()
 	if *profiling {
@@ -83,7 +90,7 @@ func runWorker() {
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    config.BindAddress + ":" + config.BindPort,
+		Addr:    workerConfig.BindAddress + ":" + workerConfig.BindPort,
 	}
 	logging.LogStd(fmt.Sprintf("%s", srv.ListenAndServe()))
 }
