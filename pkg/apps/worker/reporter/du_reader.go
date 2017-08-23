@@ -71,7 +71,10 @@ func (tree *TreeReader) ReadJsonTree() ([]byte, error) {
 
 func (tree *TreeReader) GetNodeSize(path string) (int64, error) {
 	size := int64(0)
-	node, _ := tree.ReadNode(path)
+	node, err := tree.ReadNode(path)
+	if err != nil {
+		return size, err
+	}
 	size = node.Size
 	return size, nil
 }
