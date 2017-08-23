@@ -32,7 +32,7 @@ func (worker *Worker) HandleRoot(w http.ResponseWriter, r *http.Request) {
 
 func (worker *Worker) HandleNodeSize(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
-	reader := worker.createTreeReader()
+	reader := worker.treeReaderFactory.CreateTreeReader()
 
 	size, err := reader.GetNodeSize(path)
 	if err != nil {
@@ -51,11 +51,11 @@ func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
 	params := make(map[string]interface{})
 	params["svg"] = ""
 
-	_ = templates.ExecuteTemplate(w, "flame.html", params)
+	_ = worker.templates.ExecuteTemplate(w, "flame.html", params)
 }
 
 func (worker *Worker) HandleFoldedData(w http.ResponseWriter, r *http.Request) {
-	reader := worker.createTreeReader()
+	reader := worker.treeReaderFactory.CreateTreeReader()
 
 	flame, err := reader.ReadFlameMap()
 	if err != nil {
@@ -71,7 +71,7 @@ func (worker *Worker) HandleFoldedData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (worker *Worker) HandleJsonData(w http.ResponseWriter, r *http.Request) {
-	reader := worker.createTreeReader()
+	reader := worker.treeReaderFactory.CreateTreeReader()
 	jsonTree, err := reader.ReadJsonTree()
 	if err != nil {
 		helper.ErrorResponse(w, "failed reading the json for the tree", err)
