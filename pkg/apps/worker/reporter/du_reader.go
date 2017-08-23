@@ -3,8 +3,46 @@ package reporter
 import (
 	_ "net/http/pprof"
 
+	"encoding/json"
+
 	"github.com/SpringerPE/graphite-du-report/pkg/caching"
 )
+
+type TreeReaderFactory interface {
+	CreateTreeReader() *TreeReader
+}
+
+type RedisTreeReaderConfig struct {
+	RootName    string `json:"root_name"`
+	RedisAddr   string `json:"redis_addr"`
+	RedisPasswd string `json:"redis_passwd"`
+	RetrieveChildren bool `json:"retrieve_children"`
+}
+
+func NewRedisTreeReaderConfig(jsonConf []byte) (*RedisTreeReaderConfig, error) {
+	treeReaderConfig := &RedisTreeReaderConfig{}
+	err := json.Unmarshal(jsonConf, treeReaderConfig)
+	if err != nil {
+		return nil, err
+	}
+	return treeReaderConfig, nil
+}
+
+type RedisTreeReaderFactory struct {
+	config *RedisTreeReaderConfig
+}
+
+func NewRedisTreeReaderFactory(config *RedisTreeReaderConfig) *RedisTreeReaderFactory {
+	return &RedisTreeReaderFactory{config: config}
+}
+
+func (factory *RedisTreeReaderFactory) CreateTreeReader() *TreeReader {
+
+	reader := caching.NewRedisCaching(factory.config.RedisAddr, factory.config.RedisPasswd, factory.config.RetrieveChildren)
+	treeReader, _ := NewTreeReader(factory.config.RootName, reader)
+
+	return treeReader
+}
 
 type TreeReader struct {
 	RootName string
