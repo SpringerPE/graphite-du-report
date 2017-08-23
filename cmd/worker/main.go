@@ -13,6 +13,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"encoding/json"
+	"os"
+	"path/filepath"
 )
 
 var (
@@ -45,12 +48,21 @@ func main() {
 func runWorker() {
 	kingpin.Parse()
 
-	config := &config.WorkerConfig{
+	baseFolder, _ := os.Getwd()
+	templateFolder := filepath.Join(baseFolder, "assets/worker/static/templates/*")
+
+	workerConfig := &config.WorkerConfig{
 		BindPort:    *bindPort,
 		RootName:    *rootName,
 		RedisAddr:   *redisAddr,
 		RedisPasswd: *redisPasswd,
 		RetrieveChildren: *retrieveChildren,
+		TemplatesFolder:templateFolder,
+	}
+
+	jsonWorkerConfig, err := json.Marshal(workerConfig)
+	if err != nil {
+		panic("cannot marshal worker configuration into valid json")
 	}
 
 	worker, _ := controller.NewWorker(config)
