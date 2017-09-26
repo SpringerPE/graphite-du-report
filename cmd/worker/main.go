@@ -39,7 +39,7 @@ func attachProfiler(router *mux.Router) {
 }
 
 func attachStatic(router *mux.Router) {
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("./assets/worker/static"))))
+	router.PathPrefix("/worker/static/").Handler(http.StripPrefix("/worker/static", http.FileServer(http.Dir("./assets/worker/static"))))
 }
 
 func main() {
@@ -82,11 +82,10 @@ func runWorker() {
 	attachStatic(router)
 
 	router.HandleFunc("/", worker.HandleRoot).Methods("GET").Name("Home")
-	router.HandleFunc("/size", worker.HandleNodeSize).Methods("GET").Name("Size")
-	router.HandleFunc("/folded", worker.HandleFoldedData).Methods("GET").Name("Folder")
-	router.HandleFunc("/flame", worker.HandleFlame).Methods("GET").Name("Flame")
+	router.HandleFunc("/worker/size", worker.HandleNodeSize).Methods("GET").Name("Size")
+	router.HandleFunc("/worker/folded", worker.HandleFoldedData).Methods("GET").Name("Folder")
 
-	router.HandleFunc("/json", helper.MakeGzipHandler(worker.HandleJsonData)).Methods("GET").Name("Json")
+	router.HandleFunc("/worker/json", helper.MakeGzipHandler(worker.HandleJsonData)).Methods("GET").Name("Json")
 
 	srv := &http.Server{
 		Handler: router,

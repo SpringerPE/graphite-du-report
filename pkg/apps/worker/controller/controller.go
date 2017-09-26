@@ -8,14 +8,14 @@ import (
 
 	"github.com/SpringerPE/graphite-du-report/pkg/helper"
 
-	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/reporter"
 	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/config"
+	"github.com/SpringerPE/graphite-du-report/pkg/apps/worker/reporter"
 )
 
 type Worker struct {
-	config *config.WorkerConfig
+	config            *config.WorkerConfig
 	treeReaderFactory reporter.TreeReaderFactory
-	templates *template.Template
+	templates         *template.Template
 }
 
 func NewWorker(config *config.WorkerConfig, treeReaderFactory reporter.TreeReaderFactory) (*Worker, error) {
@@ -42,16 +42,6 @@ func (worker *Worker) HandleNodeSize(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, fmt.Sprintf("%d", size))
-}
-
-func (worker *Worker) HandleFlame(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-
-	params := make(map[string]interface{})
-	params["svg"] = ""
-
-	_ = worker.templates.ExecuteTemplate(w, "flame.html", params)
 }
 
 func (worker *Worker) HandleFoldedData(w http.ResponseWriter, r *http.Request) {

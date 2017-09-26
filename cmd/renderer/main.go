@@ -29,7 +29,7 @@ func attachProfiler(router *mux.Router) {
 }
 
 func attachStatic(router *mux.Router) {
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	router.PathPrefix("/renderer/static/").Handler(http.StripPrefix("/renderer/static/", http.FileServer(http.Dir("./renderer/static"))))
 }
 
 func main() {
@@ -40,6 +40,7 @@ func runRenderer() {
 	kingpin.Parse()
 
 	config := &config.RendererConfig{
+		BindAddress: *bindAddress,
 		BindPort: *bindPort,
 	}
 
@@ -50,7 +51,7 @@ func runRenderer() {
 		attachProfiler(router)
 	}
 
-	router.HandleFunc("/render/flame", renderer.HandleFlameImage).Methods("GET").Name("Flame")
+	router.HandleFunc("/renderer/flame", renderer.HandleFlameImage).Methods("GET").Name("Flame")
 
 	srv := &http.Server{
 		Handler: router,

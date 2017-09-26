@@ -36,7 +36,7 @@ func (renderer *Renderer) HandleFlameImage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	resp, err := http.Get(fmt.Sprintf("http://%s/folded", r.Host))
+	resp, err := http.Get(fmt.Sprintf("http://%s/worker/folded", r.Host))
 	if err != nil {
 		helper.ErrorResponse(w, "failed getting the folded data representation", err)
 		return

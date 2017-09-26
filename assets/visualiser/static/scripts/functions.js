@@ -1,6 +1,6 @@
 $(document).ready(function(){
 	$.ajax({
-	    url: location.origin + "/render/flame",
+	    url: location.origin + "/renderer/flame",
 	    async: true,
 	    dataType: "html",
 
