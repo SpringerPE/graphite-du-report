@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"encoding/json"
+	"os"
+	"path/filepath"
 
 	"github.com/SpringerPE/graphite-du-report/pkg/logging"
 	"github.com/SpringerPE/graphite-du-report/pkg/helper"
@@ -14,9 +17,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"encoding/json"
-	"os"
-	"path/filepath"
+
 )
 
 var (
@@ -27,6 +28,7 @@ var (
 	redisAddr         = kingpin.Flag("redis-addr", "bind address for the redis instance").Default("localhost:6379").OverrideDefaultFromEnvar("REDIS_ADDR").String()
 	redisPasswd       = kingpin.Flag("redis-passwd", "password for redis").Default("").OverrideDefaultFromEnvar("REDIS_PASSWD").String()
 	retrieveChildren  = kingpin.Flag("retrieve-children", "whether node children info should be retrieved from the cache").Default("false").OverrideDefaultFromEnvar("RETRIEVE_CHILDREN").Bool()
+	basePath = kingpin.Flag("base-path", "base path for this component").Default("worker").OverrideDefaultFromEnvar("BASE_PATH").String()
 )
 
 func attachProfiler(router *mux.Router) {
@@ -58,7 +60,8 @@ func runWorker() {
 		RedisAddr:   *redisAddr,
 		RedisPasswd: *redisPasswd,
 		RetrieveChildren: *retrieveChildren,
-		TemplatesFolder:templateFolder,
+		TemplatesFolder: templateFolder,
+		BasePath: *basePath,
 	}
 
 	jsonWorkerConfig, err := json.Marshal(workerConfig)
@@ -82,10 +85,9 @@ func runWorker() {
 	attachStatic(router)
 
 	router.HandleFunc("/", worker.HandleRoot).Methods("GET").Name("Home")
-	router.HandleFunc("/worker/size", worker.HandleNodeSize).Methods("GET").Name("Size")
-	router.HandleFunc("/worker/folded", worker.HandleFoldedData).Methods("GET").Name("Folder")
-
-	router.HandleFunc("/worker/json", helper.MakeGzipHandler(worker.HandleJsonData)).Methods("GET").Name("Json")
+	router.HandleFunc(filepath.Join("/", workerConfig.BasePath, "size"), worker.HandleNodeSize).Methods("GET").Name("Size")
+	router.HandleFunc(filepath.Join("/", workerConfig.BasePath, "folded"), worker.HandleFoldedData).Methods("GET").Name("Folder")
+	router.HandleFunc(filepath.Join("/", workerConfig.BasePath, "json"), helper.MakeGzipHandler(worker.HandleJsonData)).Methods("GET").Name("Json")
 
 	srv := &http.Server{
 		Handler: router,

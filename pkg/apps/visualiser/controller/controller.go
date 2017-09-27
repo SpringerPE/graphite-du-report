@@ -24,6 +24,7 @@ func (visualiser *Visualiser) HandleFlame(w http.ResponseWriter, r *http.Request
 
 	params := make(map[string]interface{})
 	params["svg"] = ""
+	params["rendererPath"] = visualiser.config.RendererPath
 
 	_ = visualiser.templates.ExecuteTemplate(w, "flame.html", params)
 }

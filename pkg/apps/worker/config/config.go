@@ -8,6 +8,7 @@ type WorkerConfig struct {
 	RedisPasswd string `json:"redis_passwd"`
 	RetrieveChildren bool `json:"retrieve_children"`
 	TemplatesFolder string `json: "templates_folder"`
+	BasePath string `json: "base_path"`
 }
 
 func DefaultWorkerConfig() *WorkerConfig {
@@ -19,5 +20,6 @@ func DefaultWorkerConfig() *WorkerConfig {
 		RedisPasswd: "",
 		RetrieveChildren: false,
 		TemplatesFolder: "./templates",
+		BasePath: "worker",
 	}
 }

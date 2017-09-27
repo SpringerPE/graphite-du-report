@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"net/http"
 	"net/http/pprof"
 
@@ -17,6 +18,7 @@ var (
 	profiling   = kingpin.Flag("profiling", "enable profiling via pprof").Default("false").OverrideDefaultFromEnvar("ENABLE_PPROF").Bool()
 	bindAddress = kingpin.Flag("bind-address", "bind address for this server").Default("0.0.0.0").OverrideDefaultFromEnvar("BIND_ADDRESS").String()
 	bindPort    = kingpin.Flag("bind-port", "bind port for this server").Default("6062").OverrideDefaultFromEnvar("PORT").String()
+	basePath = kingpin.Flag("base-path", "base path for this component").Default("renderer").OverrideDefaultFromEnvar("BASE_PATH").String()
 )
 
 func attachProfiler(router *mux.Router) {
@@ -39,23 +41,24 @@ func main() {
 func runRenderer() {
 	kingpin.Parse()
 
-	config := &config.RendererConfig{
+	rendererConfig := &config.RendererConfig{
 		BindAddress: *bindAddress,
 		BindPort: *bindPort,
+		BasePath: *basePath,
 	}
 
-	renderer, _ := controller.NewRenderer(config)
+	renderer, _ := controller.NewRenderer(rendererConfig)
 
 	router := mux.NewRouter()
 	if *profiling {
 		attachProfiler(router)
 	}
 
-	router.HandleFunc("/renderer/flame", renderer.HandleFlameImage).Methods("GET").Name("Flame")
+	router.HandleFunc(filepath.Join("/", rendererConfig.BasePath, "flame"), renderer.HandleFlameImage).Methods("GET").Name("Flame")
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    config.BindAddress + ":" + config.BindPort,
+		Addr:    rendererConfig.BindAddress + ":" + rendererConfig.BindPort,
 	}
 	logging.LogStd(fmt.Sprintf("%s", srv.ListenAndServe()))
 }
