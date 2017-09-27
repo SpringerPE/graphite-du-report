@@ -13,10 +13,11 @@ The `pkg` folder contains both shared packages, while application code is locate
 the `pkg/apps` subfolder
 
 ## Components
-The application is split into three main components:
+The application is split into four main components:
 - the `updater` fetches and process the data coming from a graphite cluster, `/metrics/details` endpoint.
 - the `worker` offers api and data endpoints accessible to web clients and renderers
-- the `renderer` renders the raw disk usage data into shareable graphs 
+- the `renderer` renders the raw disk usage data into a SVG image
+- the `visualiser` visualises the raw disk usage data via an html document
 
 ## Api endpoints
 ### updater
@@ -33,16 +34,16 @@ The `worker` exposes:
 |Method|Endpoint|Parameters|Usage|
 |----------|----------|---------------|------------|
 |GET|`/`|None|information about the supported endpoints|
-|GET|`/size`|`path`: dot separated string|Gets the current usage in bytes for the metrics under `path`|
-|GET|`/flame`|None|Generates a html page including the flame graph|
-|GET|`/folded`|None|Retrieves a representation of the metrics in folded format|
+|GET|`[/{worker.BasePath}]/size`|`path`: dot separated string|Gets the current usage in bytes for the metrics under `path`|
+|GET|`[/{worker.BasePath}]/folded`|None|Generates a folded format representation of the current disk usage|
+|GET|`[/{worker.BasePath}]/json`|None|Generates a json tree representation of the current disk usage|
 
 ### renderer
 The `renderer` exposes:
 
 |Method|Endpoint|Parameters|Usage|
 |----------|----------|---------------|------------|
-|GET|`/render/flame`|None|Returns a renderered flame image|
+|GET|`[/{renderer.BasePath}]/flame`|None|Returns a renderered flame image|
 
 #### How to contribute your own renderer
 
@@ -55,26 +56,34 @@ rendered.
 Additional renderers can be developed as simple web apps, implementing a `GET`
 endpoint and returning an html snippet containing the rendered image or object.
 
+### visualiser
+The `visualiser` exposes:
+
+|Method|Endpoint|Parameters|Usage|
+|----------|----------|---------------|------------|
+|GET|`[/{visualiser.BasePath}]/flame`|None|Returns a html page which contains the rendered disk usage stats|
+
 ## Requirements
 The current implementation makes use of a single Redis instance as a data/caching backend
 
 ```
-Updater  --------->    Redis  <----------    Worker  <------------ Renderer(s)
+Updater  --------->    Redis  <----------    Worker  <------------ Renderer(s) <---------- Visualiser
 ```
 
-The `worker` and the `renderer` processes need to be served from the same url
+The `worker` , `renderer` and `visualiser` processes need to be served from the same base url
 endpoint. 
 
 In particular the `worker` should be served under the `/` context path,
-while the `renderer` should be served under the `/render` context path ie.:
+while the `renderer` should be served under the `/renderer` context path and the `visualiser` from the `/visualise` context path ie.:
 
 - graphite-du.example.com (`worker`)
-- graphite-du.example.com/render (`renderer`)
+- graphite-du.example.com/renderer (`renderer`)
+- graphite-du.example.com/visualiser (`visualiser`)
 
 There are no limitations regarding the `updater`
 
 ## Configuration
-The configuration of the `updater`, `worker` and `renderer` processes relies on kingpin. The following `cli` 
+The configuration of the `updater`, `worker`, `renderer` and `visualiser` processes relies on kingpin. The following `cli` 
 parameters and `envs` are defined:
 
 #### updater
@@ -112,6 +121,7 @@ in order to run the updater:
 |num-update-routines|UPDATE_ROUTINES|10|num of concurrent update routines|
 |num-bulk-updates|BULK_UPDATES|100|num of concurrent bulk operations for redis|
 |num-bulk-scans|BULK_SCANS|100|num of bulk scans for redis|
+|base-path|BASE_PATH|worker|base context path for this component|
 
 in order to run the worker:
 ```
@@ -125,7 +135,8 @@ in order to run the worker:
 |------|------|-------|-------|
 |profiling|ENABLE_PPROF|false|enable pprof profiling|
 |bind-address|BIND_ADDRESS|0.0.0.0|binding address for the process|
-|bind-port|PORT|6063|binding port for the process|
+|bind-port|PORT|6062|binding port for the process|
+|base-path|BASE_PATH|renderer|base context path for this component|
 
 in order to run the renderer:
 ```
@@ -133,8 +144,24 @@ in order to run the renderer:
 ./renderer
 ```
 
+#### visualiser
+
+|Param|Env|Default|Meaning|
+|------|------|-------|-------|
+|profiling|ENABLE_PPROF|false|enable pprof profiling|
+|bind-address|BIND_ADDRESS|0.0.0.0|binding address for the process|
+|bind-port|PORT|6063|binding port for the process|
+|base-path|BASE_PATH|visualiser|base context path for this component|
+|renderer-path|RENDERER_PATH|renderer|base context path for the renderer component|
+
+in order to run the visualiser:
+```
+#RUN THE VISUALISER
+./visualiser
+```
+
 ## Installation
-`go install github.com/SpringerPE/graphite-du-report/cmd/{worker,updater,renderer}`, 
+`go install github.com/SpringerPE/graphite-du-report/cmd/{worker,updater,renderer,visualiser}`, 
 the dependencies are vendored in a `vendor` folder.
 
 They have been generated using the [dep](https://github.com/golang/dep) tool.
