@@ -4,6 +4,9 @@
 	<link rel="stylesheet" href="/visualiser/static/css/flame.css">
 	<script src="/visualiser/static/scripts/jquery-3.2.1.min.js"></script>
 	<script src="/visualiser/static/scripts/functions.js"></script>
+	<script>
+		$(document).ready(render_flame({{.rendererPath}}));
+	</script>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<title>SVG</title>
 </head>
